@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TecniQuiz</title>
-<!-- Firebase CDN compatible (no módulos) -->
+<title>TecniQuiz — EET N°23 Caudillos Federales</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -17,8 +16,8 @@ input,button,select,textarea{font-family:'Nunito',sans-serif}
 .sidebar{width:210px;background:#0C0E14;border-right:1px solid #1E2333;display:flex;flex-direction:column;flex-shrink:0}
 .main{flex:1;overflow-y:auto;padding:24px}
 .sb-logo{padding:16px;border-bottom:1px solid #1E2333}
-.sb-logo-name{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700}
-.sb-logo-sub{font-size:10px;color:#4B5563;letter-spacing:2px;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.sb-logo-name{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700}
+.sb-logo-sub{font-size:10px;color:#4B5563;letter-spacing:1.5px;margin-top:2px;font-family:'JetBrains Mono',monospace}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;cursor:pointer;color:#64748B;border-left:2px solid transparent;transition:all .15s;font-weight:500}
 .nav-item:hover{background:#11141C;color:#F0EDE8}
 .nav-item.active{color:#F97316;border-left-color:#F97316;background:#F9731610}
@@ -46,6 +45,7 @@ textarea{resize:none}
 .tag-gold{background:#F59E0B18;color:#F59E0B;border:1px solid #F59E0B35}
 .tag-red{background:#EF444418;color:#EF4444;border:1px solid #EF444435}
 .tag-muted{background:#37415118;color:#6B7280;border:1px solid #37415135}
+.tag-violet{background:#8B5CF618;color:#8B5CF6;border:1px solid #8B5CF635}
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .pbar{height:5px;background:#1E2333;border-radius:99px;overflow:hidden}
 .pbar-fill{height:100%;background:#F97316;border-radius:99px;transition:width .5s ease}
@@ -69,10 +69,9 @@ textarea{resize:none}
 .pop{animation:pop .4s cubic-bezier(.2,.85,.3,1) both}
 .sr{animation:slideR .28s ease both}
 .overlay{position:fixed;inset:0;background:#000000DD;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:#0F1117;border:1px solid #2C3348;border-radius:14px;width:100%;max-width:580px;max-height:92vh;overflow-y:auto}
+.modal{background:#0F1117;border:1px solid #2C3348;border-radius:14px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1E2333}
 .modal-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700}
-.modal-body{padding:22px}
 .close-btn{background:none;border:none;color:#4B5563;font-size:22px;cursor:pointer;line-height:1}
 .code-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#F97316;letter-spacing:5px}
 .opt-btn{display:flex;align-items:flex-start;gap:12px;width:100%;padding:16px 18px;border:2px solid #1E2333;border-radius:10px;background:#0F1117;cursor:pointer;text-align:left;transition:all .14s;color:#F0EDE8;font-size:14px;font-weight:500;line-height:1.35;margin-bottom:10px}
@@ -86,6 +85,8 @@ textarea{resize:none}
 #toast{position:fixed;top:16px;right:16px;z-index:9999;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;background:#181C27;border:1px solid #2C3348;color:#F0EDE8;box-shadow:0 8px 24px #00000080;display:none;max-width:320px}
 .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 14px 6px 8px;border-radius:20px;border:1px solid #1E2333;background:#0F1117;font-size:13px;font-weight:500;animation:slideR .25s ease both}
 .chip.me{border-color:#F9731650;background:#F9731612;color:#F97316}
+.subject-filter{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.subject-btn{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:none;font-weight:600;transition:all .15s}
 @media(max-width:600px){.sidebar{width:52px}.sidebar .sb-logo-name,.sidebar .sb-logo-sub,.sidebar .nav-item span:last-child,.sb-status{display:none}.nav-item{justify-content:center;padding:12px}.main{padding:14px}.stat-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -94,45 +95,290 @@ textarea{resize:none}
 <div id="app"></div>
 
 <script>
-// ── Firebase init ──────────────────────────────────────────────
 firebase.initializeApp({
-  apiKey:            "AIzaSyAawa9s6SUOW8oB5Fx1mZOAMu_1PlDcsg8",
-  authDomain:        "tecniquiz.firebaseapp.com",
-  databaseURL:       "https://tecniquiz-default-rtdb.firebaseio.com",
-  projectId:         "tecniquiz",
-  storageBucket:     "tecniquiz.firebasestorage.app",
-  messagingSenderId: "815651954314",
-  appId:             "1:815651954314:web:21826a65a884fb4b119773"
+  apiKey:"AIzaSyAawa9s6SUOW8oB5Fx1mZOAMu_1PlDcsg8",
+  authDomain:"tecniquiz.firebaseapp.com",
+  databaseURL:"https://tecniquiz-default-rtdb.firebaseio.com",
+  projectId:"tecniquiz",
+  storageBucket:"tecniquiz.firebasestorage.app",
+  messagingSenderId:"815651954314",
+  appId:"1:815651954314:web:21826a65a884fb4b119773"
 });
-var db = firebase.database();
+var db=firebase.database();
 
-// ── Questions ─────────────────────────────────────────────────
-var QDB = [
-  {id:1,text:"¿Cuál es la resistencia característica del hormigón H-25?",opts:["15 MPa","20 MPa","25 MPa","30 MPa"],ans:2,topic:"Materiales",diff:"medio"},
-  {id:2,text:"¿Qué norma regula el diseño sísmico en Argentina?",opts:["CIRSOC 101","CIRSOC 103","CIRSOC 201","CIRSOC 301"],ans:1,topic:"Normativa",diff:"difícil"},
-  {id:3,text:"Recubrimiento mínimo en losa de entrepiso:",opts:["1 cm","2 cm","3 cm","4 cm"],ans:1,topic:"Estructuras",diff:"fácil"},
-  {id:4,text:"Peso aproximado de 1 m³ de hormigón armado:",opts:["1800 kg","2000 kg","2400 kg","2800 kg"],ans:2,topic:"Materiales",diff:"fácil"},
-  {id:5,text:"Escala más usada en planos de planta:",opts:["1:5","1:50","1:500","1:5000"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
-  {id:6,text:"¿Qué es la cimentación por zapatas?",opts:["Fundación superficial aislada","Fundación profunda continua","Losa de fundación total","Pilotes hincados"],ans:0,topic:"Fundaciones",diff:"medio"},
-  {id:7,text:"La flecha en una viga es:",opts:["Deformación vertical máxima","Fuerza horizontal","Torsión axial","Esfuerzo normal"],ans:0,topic:"Estructuras",diff:"medio"},
-  {id:8,text:"El módulo de elasticidad relaciona:",opts:["Carga y deformación total","Tensión y deformación unitaria","Resistencia y dureza","Masa y volumen"],ans:1,topic:"Mecánica",diff:"difícil"},
+// ═══════════════════════════════════════════════════
+// BANCO DE PREGUNTAS — EET N°23 MMO + STE COMPUTACIÓN
+// ═══════════════════════════════════════════════════
+var QDB=[
+  // ── TALLER DE LA ESPECIALIDAD ──────────────────
+  {id:1,text:"¿Qué es el replanteo en una obra?",opts:["La limpieza del terreno","La marcación en el terreno de los ejes y medidas del proyecto","La excavación de cimientos","El armado de encofrados"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:2,text:"¿Cuál es la proporción estándar de una mezcla de hormigón simple H-8?",opts:["1:2:3","1:3:5","1:4:8","1:2:4"],ans:2,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:3,text:"¿Para qué sirve la capa aisladora horizontal en cimientos?",opts:["Dar resistencia a la fundación","Impedir el ascenso de humedad del suelo a los muros","Mejorar la adherencia del revoque","Nivelar la base de la mampostería"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:4,text:"¿Cuántos cm debe sobresalir el hierro en una junta de construcción?",opts:["20 cm","30 cm","40 cm","50 cm"],ans:2,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:5,text:"¿Qué herramienta se usa para verificar la verticalidad de un muro?",opts:["Nivel de burbuja","Plomada","Escuadra","Cinta métrica"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:6,text:"¿Cuál es el espesor mínimo de una losa de entrepiso convencional?",opts:["8 cm","10 cm","12 cm","15 cm"],ans:2,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:7,text:"El ladrillo cerámico hueco de 18x18x33 cm se usa principalmente en:",opts:["Cimientos bajo mampostería","Muros de elevación","Losas nervuradas","Tabiques divisorios liviano"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:8,text:"¿Qué es el encofrado?",opts:["El armado de hierros","El molde temporal que da forma al hormigón","La capa de protección del acero","El relleno de juntas"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:9,text:"¿Qué tipo de traba se usa en esquinas de mampostería para mayor resistencia?",opts:["Traba a soga","Traba a tizón","Traba a sardinel","Traba alternada con traslape"],ans:3,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:10,text:"¿A qué se denomina 'desencofrar'?",opts:["Armar los hierros","Retirar los moldes de madera una vez fraguado el hormigón","Mezclar el hormigón","Colocar la armadura"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:11,text:"¿Cuántos días mínimo debe curarse el hormigón antes de desencofrar una losa?",opts:["3 días","7 días","14 días","21 días"],ans:2,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:12,text:"¿Qué es el fraguado del cemento?",opts:["El endurecimiento final del hormigón","La reacción química inicial entre el cemento y el agua","La pérdida de agua por evaporación","El curado del hormigón"],ans:1,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:13,text:"¿Cuál es la función del estibo en una columna de hormigón armado?",opts:["Resistir la tracción longitudinal","Resistir los esfuerzos de corte y mantener los hierros en posición","Aumentar la compresión","Conectar la columna con la losa"],ans:1,topic:"Taller de la Especialidad",diff:"difícil"},
+  {id:14,text:"¿Qué tipo de excavación se realiza para una zapata aislada?",opts:["Zanja continua","Pozo","Galería","Submuración"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:15,text:"La relación agua/cemento en el hormigón afecta principalmente a:",opts:["El color del hormigón","La resistencia mecánica y durabilidad","El peso específico","El tiempo de fraguado únicamente"],ans:1,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:16,text:"¿Qué es el aplomado de un muro?",opts:["Verificar su horizontalidad","Verificar su verticalidad","Medir su espesor","Revisar la calidad del ladrillo"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:17,text:"¿Cuál es la función de la armadura de temperatura en una losa?",opts:["Resistir momentos flectores","Controlar las fisuras por cambios de temperatura","Aumentar la rigidez","Reducir el peso propio"],ans:1,topic:"Taller de la Especialidad",diff:"difícil"},
+  {id:18,text:"¿Qué significa 'colar' el hormigón?",opts:["Tamizarlo para quitarle impurezas","Verterlo en el encofrado","Compactarlo con vibrador","Mezclarlo en la hormigonera"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+  {id:19,text:"El muro de 15 cm de espesor se construye con ladrillos colocados:",opts:["A soga","A tizón","A sardinel","A panderete"],ans:3,topic:"Taller de la Especialidad",diff:"medio"},
+  {id:20,text:"¿Qué es la nivelación en una obra?",opts:["Excavar el terreno","Determinar y trasladar cotas de altura","Compactar el suelo","Marcar los ejes de la planta"],ans:1,topic:"Taller de la Especialidad",diff:"fácil"},
+
+  // ── DIBUJO TÉCNICO ─────────────────────────────
+  {id:21,text:"¿Qué norma IRAM regula los métodos de proyección en dibujo técnico?",opts:["IRAM 4501","IRAM 4502-20","IRAM 4513","IRAM 4557"],ans:1,topic:"Dibujo Técnico",diff:"medio"},
+  {id:22,text:"¿Cuál es la escala más usada en planos de planta arquitectónica?",opts:["1:5","1:20","1:50","1:200"],ans:2,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:23,text:"En un plano, una línea a trazos y puntos representa:",opts:["Una arista oculta","El eje de simetría o eje de un elemento","El contorno visible","Una sección"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:24,text:"¿Qué norma IRAM regula la representación simbólica de armaduras de hormigón?",opts:["IRAM 4507","IRAM 4540","IRAM 4557","IRAM 4564"],ans:2,topic:"Dibujo Técnico",diff:"medio"},
+  {id:25,text:"En AutoCAD, ¿qué comando se usa para crear una línea?",opts:["CIRCLE","LINE","ARC","POLYGON"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:26,text:"¿Qué es una perspectiva isométrica?",opts:["Proyección con un punto de fuga","Proyección axonométrica con ángulos iguales de 120°","Vista en planta","Corte vertical"],ans:1,topic:"Dibujo Técnico",diff:"medio"},
+  {id:27,text:"¿Para qué sirve la acotación en un plano técnico?",opts:["Indicar materiales","Indicar las dimensiones reales del objeto","Señalar los ejes de referencia","Mostrar colores"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:28,text:"Una escala 1:100 significa que 1 cm en el plano equivale a:",opts:["1 m en la realidad","10 cm en la realidad","100 mm en la realidad","1 dm en la realidad"],ans:0,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:29,text:"¿Qué norma IRAM regula las instalaciones para agua y ventilación?",opts:["IRAM 4555","IRAM 4557","IRAM 4564","IRAM 4566"],ans:2,topic:"Dibujo Técnico",diff:"difícil"},
+  {id:30,text:"En un corte o sección, las partes cortadas se indican con:",opts:["Líneas de punto y raya","Rayado o sombreado según el material","Líneas gruesas","Líneas ocultas"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:31,text:"¿Qué es la proyección oblicua caballera?",opts:["Proyección ortogonal","Tipo de perspectiva donde el eje Z se dibuja a 45° y reducido a la mitad","Vista auxiliar","Corte en perspectiva"],ans:1,topic:"Dibujo Técnico",diff:"medio"},
+  {id:32,text:"En AutoCAD, ¿qué comando permite girar un objeto?",opts:["MOVE","SCALE","ROTATE","MIRROR"],ans:2,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:33,text:"¿Qué es el 'espacio modelo' en AutoCAD?",opts:["El espacio para imprimir","El entorno de trabajo donde se dibuja a escala real","La ventana de capas","El panel de propiedades"],ans:1,topic:"Dibujo Técnico",diff:"medio"},
+  {id:34,text:"Los símbolos de protección contra incendio en planos se rigen por la norma:",opts:["IRAM 4509","IRAM 4513","IRAM 4540","IRAM 4555"],ans:3,topic:"Dibujo Técnico",diff:"difícil"},
+  {id:35,text:"¿Cuántas vistas principales tiene un objeto representado en proyección ortogonal?",opts:["3","4","5","6"],ans:3,topic:"Dibujo Técnico",diff:"medio"},
+  {id:36,text:"En AutoCAD, la capa (layer) sirve para:",opts:["Definir colores del fondo","Organizar y controlar la visibilidad de elementos del dibujo","Escalar el dibujo","Configurar la impresora"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:37,text:"¿Qué es una planta de arquitectura?",opts:["La vista frontal del edificio","El corte horizontal del edificio a 1,20 m de altura","La vista lateral","El corte vertical"],ans:1,topic:"Dibujo Técnico",diff:"fácil"},
+  {id:38,text:"¿Qué comando de AutoCAD permite crear un chaflán?",opts:["FILLET","CHAMFER","TRIM","EXTEND"],ans:1,topic:"Dibujo Técnico",diff:"medio"},
+  {id:39,text:"En dibujo técnico, el rayado del aluminio en secciones se representa con:",opts:["Líneas a 45° separadas 3 mm","Líneas a 45° muy juntas con inversión alterna","Líneas horizontales","Sin rayado"],ans:1,topic:"Dibujo Técnico",diff:"difícil"},
+  {id:40,text:"¿Qué es la planta de techo en arquitectura?",opts:["Vista desde arriba mostrando la cubierta","Corte horizontal del edificio","Vista frontal del techo","Plano de instalaciones"],ans:0,topic:"Dibujo Técnico",diff:"fácil"},
+
+  // ── MATERIALES DE CONSTRUCCIÓN ─────────────────
+  {id:41,text:"¿Cuál es la resistencia característica del hormigón H-25?",opts:["15 MPa","20 MPa","25 MPa","30 MPa"],ans:2,topic:"Materiales de Construcción",diff:"medio"},
+  {id:42,text:"¿Qué tipo de cemento se usa para obras en contacto con sulfatos?",opts:["Cemento Portland normal","Cemento de alta resistencia inicial","Cemento puzolánico","Cemento resistente a sulfatos"],ans:3,topic:"Materiales de Construcción",diff:"difícil"},
+  {id:43,text:"¿Cuánto pesa aproximadamente 1 m³ de hormigón armado?",opts:["1800 kg","2000 kg","2400 kg","2800 kg"],ans:2,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:44,text:"¿Qué son los materiales bituminosos?",opts:["Materiales derivados del petróleo usados como impermeabilizantes","Materiales cerámicos","Materiales metálicos","Materiales a base de cal"],ans:0,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:45,text:"¿Cuál es la principal característica de las maderas de primera calidad para estructura?",opts:["Alta humedad","Ausencia de nudos y defectos significativos","Color oscuro","Mayor peso específico"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+  {id:46,text:"¿Para qué se utiliza la cal aérea en construcción?",opts:["Como aglomerante hidráulico para obras sumergidas","Como aglomerante en morteros de interior que no están en contacto con agua","Para hacer hormigón armado","Como impermeabilizante"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+  {id:47,text:"¿Cuál es la composición básica de un mortero de asiento?",opts:["Cal + arena + agua","Cemento + arena + agua","Cal + cemento + arena + agua","Solo cemento + agua"],ans:2,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:48,text:"¿Qué es la puzolana?",opts:["Tipo de arena volcánica que reacciona con la cal","Tipo de cemento","Material cerámico","Tipo de granito"],ans:0,topic:"Materiales de Construcción",diff:"difícil"},
+  {id:49,text:"El acero ADN 420 tiene una tensión de fluencia de:",opts:["250 MPa","300 MPa","420 MPa","500 MPa"],ans:2,topic:"Materiales de Construcción",diff:"medio"},
+  {id:50,text:"¿Qué tipo de ladrillo se usa para muros que requieren aislación térmica?",opts:["Ladrillo macizo","Ladrillo cerámico hueco","Ladrillo refractario","Ladrillo de campo"],ans:1,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:51,text:"¿Cuál es el componente principal del cemento Portland?",opts:["Sílice","Clinker molido con yeso","Cal viva","Arena fina"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+  {id:52,text:"¿Qué son los áridos en el hormigón?",opts:["El agua y el cemento","La arena y el pedregullo que forman el esqueleto granular","Los aditivos químicos","Las armaduras de acero"],ans:1,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:53,text:"¿Cuál es la temperatura máxima de trabajo de los materiales refractarios?",opts:["500°C","800°C","Más de 1500°C","300°C"],ans:2,topic:"Materiales de Construcción",diff:"difícil"},
+  {id:54,text:"¿Qué tipo de vidrio se usa en puertas y ventanas de seguridad?",opts:["Vidrio soplado","Vidrio templado o laminado","Vidrio opalino","Vidrio plano simple"],ans:1,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:55,text:"La relación agua/cemento óptima para hormigones estructurales es aproximadamente:",opts:["0,25","0,40 a 0,55","0,70","0,90"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+  {id:56,text:"¿Qué es la granulometría de los áridos?",opts:["El color de los áridos","La distribución de tamaños de las partículas","El peso específico","La dureza superficial"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+  {id:57,text:"¿Cuál es la principal ventaja del DVH (doble vidriado hermético)?",opts:["Mayor resistencia mecánica","Mejor aislación térmica y acústica","Menor peso","Mayor transparencia"],ans:1,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:58,text:"Las pinturas ignífugas se usan para:",opts:["Impermeabilizar","Proteger superficies contra el fuego","Decorar interiores","Combatir la corrosión"],ans:1,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:59,text:"¿Qué es el yeso en construcción?",opts:["Sulfato de calcio hidratado usado como material de terminación","Tipo de cemento","Material metálico","Tipo de pintura"],ans:0,topic:"Materiales de Construcción",diff:"fácil"},
+  {id:60,text:"¿Cuál es la función de los aditivos en el hormigón?",opts:["Reemplazar el cemento","Modificar propiedades como trabajabilidad, fraguado o resistencia","Solo mejorar el color","Reducir la cantidad de áridos"],ans:1,topic:"Materiales de Construcción",diff:"medio"},
+
+  // ── ESTÁTICA Y RESISTENCIA DE MATERIALES ───────
+  {id:61,text:"¿Qué es el momento de una fuerza respecto a un punto?",opts:["La suma de las fuerzas","El producto de la fuerza por su distancia perpendicular al punto","La división fuerza/distancia","El cociente entre fuerza y masa"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:62,text:"El Teorema de Varignon establece que:",opts:["La suma de fuerzas es cero en equilibrio","El momento resultante es igual a la suma algebraica de los momentos de las fuerzas componentes","Las fuerzas se anulan entre sí","El baricentro coincide con el centro de gravedad"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:63,text:"¿Qué es el baricentro de una sección?",opts:["El punto de máxima resistencia","El centro geométrico o centro de gravedad de una sección","El punto de menor tensión","La fibra neutra superior"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:64,text:"La ley de Hooke establece que:",opts:["La deformación es inversamente proporcional a la tensión","La tensión es directamente proporcional a la deformación unitaria (en el rango elástico)","La resistencia aumenta con la temperatura","La flexión depende del momento de inercia únicamente"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:65,text:"¿Qué es el módulo de elasticidad (E)?",opts:["Tensión dividida área","Relación entre tensión normal y deformación unitaria","Resistencia última del material","Momento de inercia / área"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:66,text:"Una viga simplemente apoyada con carga central tiene la flecha máxima en:",opts:["En los apoyos","En el cuarto de la luz","En el centro del vano","Siempre en el tercio"],ans:2,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:67,text:"¿Qué es el momento de inercia de una sección?",opts:["El área de la sección","La resistencia de la sección a doblarse, relacionada con la distribución de área respecto al eje neutro","El peso por unidad de longitud","La tensión admisible"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:68,text:"El Teorema de Steiner (eje paralelo) permite:",opts:["Calcular reacciones en apoyos","Trasladar el momento de inercia de un eje que pasa por el baricentro a un eje paralelo","Calcular tensiones de flexión","Determinar el peso propio"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"difícil"},
+  {id:69,text:"¿Qué tipo de vínculo es un apoyo fijo (empotramiento)?",opts:["Solo impide traslación vertical","Solo impide traslación horizontal","Impide traslación en todas las direcciones y la rotación","Solo impide la rotación"],ans:2,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:70,text:"Una estructura isostáticamente sustentada tiene:",opts:["Infinitas soluciones de equilibrio","El número de incógnitas igual al número de ecuaciones de equilibrio disponibles","Siempre dos apoyos","Solo cargas puntuales"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"difícil"},
+  {id:71,text:"¿Qué es el pandeo en una columna?",opts:["La flexión lateral de una barra comprimida al superar la carga crítica de Euler","La rotura por tracción","La torsión por carga horizontal","La compresión simple"],ans:0,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:72,text:"¿Qué representa el diagrama de momento flector en una viga?",opts:["Las fuerzas de reacción","La variación del momento flector a lo largo de la viga","Las tensiones de corte","Las deformaciones"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:73,text:"La tensión admisible es:",opts:["La tensión de rotura del material","La tensión máxima permitida en servicio, obtenida dividiendo la resistencia por el coeficiente de seguridad","La tensión de fluencia","La tensión de pandeo"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:74,text:"¿Cuál es la unidad del módulo de elasticidad?",opts:["Kg","MPa (o N/mm²)","Adimensional","Kg/m"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:75,text:"En un reticulado, las barras solo trabajan a:",opts:["Flexión y corte","Tracción o compresión axial pura","Torsión","Flexión pura"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:76,text:"¿Qué es la torsión en una barra?",opts:["Flexión en dos planos","Giro de la sección transversal por un momento torsor","Alargamiento axial","Compresión lateral"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"medio"},
+  {id:77,text:"El módulo resistente W de una sección se define como:",opts:["I/y (momento de inercia dividido la distancia a la fibra extrema)","Área × tensión","Fuerza × brazo","I × E"],ans:0,topic:"Estática y Resistencia de Materiales",diff:"difícil"},
+  {id:78,text:"¿Cuántas ecuaciones de equilibrio estático hay para un sistema plano?",opts:["2","3","4","6"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+  {id:79,text:"El coeficiente de Poisson relaciona:",opts:["Tensión y deformación longitudinal","Deformación lateral y deformación longitudinal","Fuerza y área","Temperatura y deformación"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"difícil"},
+  {id:80,text:"¿Qué es la flecha en una viga?",opts:["La tensión máxima","La deformación vertical máxima","La reacción en los apoyos","El momento flector máximo"],ans:1,topic:"Estática y Resistencia de Materiales",diff:"fácil"},
+
+  // ── HORMIGÓN ARMADO ────────────────────────────
+  {id:81,text:"¿Cuánto vale la tensión admisible del hormigón H-21 a compresión?",opts:["70 kg/cm²","85 kg/cm²","100 kg/cm²","120 kg/cm²"],ans:1,topic:"Hormigón Armado",diff:"difícil"},
+  {id:82,text:"¿Cuál es el recubrimiento mínimo del acero en una losa de entrepiso interior?",opts:["1 cm","2 cm","3 cm","4 cm"],ans:1,topic:"Hormigón Armado",diff:"fácil"},
+  {id:83,text:"La hipótesis de Bernoulli-Navier establece que:",opts:["Las secciones planas permanecen planas después de la flexión","El hormigón trabaja en tracción","La armadura no aporta resistencia","El eje neutro está en el borde superior"],ans:0,topic:"Hormigón Armado",diff:"difícil"},
+  {id:84,text:"¿Qué es la cuantía de armadura?",opts:["La longitud total de barras","La relación entre el área de acero y el área de hormigón de la sección","El espaciamiento entre barras","El diámetro de la barra"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:85,text:"¿Para qué sirven los estribos en una viga?",opts:["Resistir los momentos flectores","Resistir los esfuerzos de corte y mantener los hierros longitudinales en posición","Aumentar la compresión","Reducir la flecha"],ans:1,topic:"Hormigón Armado",diff:"fácil"},
+  {id:86,text:"Una losa nervurada tiene la ventaja de:",opts:["Mayor resistencia al fuego","Menor peso y mayor luz libre respecto a una losa maciza del mismo canto","Mayor resistencia a impacto","Mejor aislación acústica"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:87,text:"¿Cuál es la relación de módulos de elasticidad n = Ee/Eb usada en el cálculo?",opts:["5","10","15","20"],ans:1,topic:"Hormigón Armado",diff:"difícil"},
+  {id:88,text:"¿Qué es una zapata excéntrica?",opts:["Zapata sin armadura","Zapata cuyo eje no coincide con el eje de la columna","Zapata de gran profundidad","Zapata de hormigón ciclópeo"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:89,text:"El método de los estados límite en hormigón armado contempla:",opts:["Solo la resistencia última","Estado límite último (rotura) y estado límite de servicio (fisuración, deformación)","Solo las deformaciones","Solo la durabilidad"],ans:1,topic:"Hormigón Armado",diff:"difícil"},
+  {id:90,text:"¿Qué son las barras dobladas en una viga?",opts:["Barras que se usan en columnas","Barras de la armadura inferior dobladas hacia arriba en los extremos para resistir el cortante","Barras de temperatura","Armadura de distribución"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:91,text:"¿Cuál es el diámetro mínimo de armadura longitudinal en columnas según norma?",opts:["6 mm","8 mm","10 mm","12 mm"],ans:2,topic:"Hormigón Armado",diff:"difícil"},
+  {id:92,text:"Una viga en T tiene la ventaja de:",opts:["Mayor facilidad de encofrado","Aprovechar el trabajo a compresión del ala de losa, reduciendo la armadura necesaria","Mayor peso propio","Menor altura estructural"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:93,text:"¿Qué son los premoldeados de hormigón?",opts:["Hormigón vaciado en sitio","Elementos fabricados en planta y trasladados a la obra","Hormigón de alta resistencia","Hormigón con aditivos especiales"],ans:1,topic:"Hormigón Armado",diff:"fácil"},
+  {id:94,text:"La fisuración del hormigón a tracción es perjudicial porque:",opts:["Aumenta el peso de la estructura","Expone las armaduras a la corrosión y reduce la durabilidad","Reduce la resistencia a compresión","Aumenta la flecha"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:95,text:"¿Cuánto vale el módulo de elasticidad del acero?",opts:["70 000 MPa","100 000 MPa","200 000 MPa","300 000 MPa"],ans:2,topic:"Hormigón Armado",diff:"medio"},
+  {id:96,text:"¿Qué es la longitud de anclaje?",opts:["La longitud de la viga","La longitud mínima de empalme o empotramiento de la barra para que trabaje a su tensión admisible","La separación entre estribos","El largo de los estribos"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:97,text:"En una losa maciza simplemente apoyada, la armadura principal se coloca en la:",opts:["Parte superior (zona de tracción)","Parte inferior (zona de tracción para carga gravitatoria)","En el centro de la losa","En ambas caras siempre"],ans:1,topic:"Hormigón Armado",diff:"fácil"},
+  {id:98,text:"¿Qué es una base combinada en fundaciones?",opts:["Base que soporta dos columnas","Base con doble armadura","Base de hormigón ciclópeo","Base flotante"],ans:0,topic:"Hormigón Armado",diff:"medio"},
+  {id:99,text:"El coeficiente de seguridad en el método de tensiones admisibles tiene como objetivo:",opts:["Aumentar las cargas de diseño","Cubrir incertidumbres en cargas, materiales y ejecución","Reducir el costo de la obra","Aumentar la cantidad de armadura"],ans:1,topic:"Hormigón Armado",diff:"medio"},
+  {id:100,text:"¿Cuál es el valor del peso específico del acero?",opts:["5000 kg/m³","6000 kg/m³","7850 kg/m³","9000 kg/m³"],ans:2,topic:"Hormigón Armado",diff:"fácil"},
+
+  // ── CONSTRUCCIONES COMPLEMENTARIAS ─────────────
+  {id:101,text:"¿Cuál es la función principal de la membrana asfáltica?",opts:["Aislación térmica","Impermeabilización de cubiertas y fundaciones","Aislación acústica","Protección contra incendio"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:102,text:"¿Qué es el aislamiento DVH?",opts:["Doble Vidriado Hermético para mejorar la aislación térmica y acústica","Sistema de ventilación","Tipo de pintura aislante","Material refractario"],ans:0,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:103,text:"¿Cuál es la pendiente mínima recomendada para un techo de chapas?",opts:["1%","3%","5% al 10%","15%"],ans:2,topic:"Construcciones Complementarias",diff:"medio"},
+  {id:104,text:"El poliestireno expandido (EPS) se utiliza principalmente como:",opts:["Impermeabilizante","Aislante térmico","Material estructural","Revestimiento decorativo"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:105,text:"¿Qué es un cielorraso suspendido?",opts:["Techo inclinado","Sistema de cielorraso separado de la estructura superior mediante perfiles","Revoque fino en techo","Losa vista"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:106,text:"¿Qué es la reverberación en acústica?",opts:["El nivel sonoro de una fuente","La persistencia del sonido en un recinto después de cesar la fuente","El aislamiento entre ambientes","La reflexión del calor"],ans:1,topic:"Construcciones Complementarias",diff:"medio"},
+  {id:107,text:"¿Qué material se usa para la barrera de vapor en techos?",opts:["Yeso","Film de polietileno","Mortero de cemento","Hormigón"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:108,text:"El contrapiso tiene como función principal:",opts:["Ser la capa de terminación final","Nivelar, rellenar y servir de base para el piso terminado","Impermeabilizar la losa","Aislar acústicamente"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:109,text:"¿Qué son los mojinetes en una cubierta de techo?",opts:["Las tejas planas","Los muros triangulares en los extremos del techo a dos aguas","Los caños de desagüe","Las vigas principales"],ans:1,topic:"Construcciones Complementarias",diff:"medio"},
+  {id:110,text:"¿Cuál es la función del punto de ignición en materiales ignífugos?",opts:["La temperatura a la que el material se enciende espontáneamente","El nivel de ruido","La conductividad térmica","La dureza del material"],ans:0,topic:"Construcciones Complementarias",diff:"difícil"},
+  {id:111,text:"¿Qué es la conductividad térmica de un material?",opts:["Su capacidad de reflexión solar","La cantidad de calor que transmite por unidad de tiempo, área y gradiente de temperatura","Su resistencia mecánica","Su densidad"],ans:1,topic:"Construcciones Complementarias",diff:"medio"},
+  {id:112,text:"Los pisos porcelanatos se caracterizan por:",opts:["Baja resistencia al desgaste","Alta resistencia al desgaste, baja absorción de agua y fácil limpieza","Alta porosidad","Baja resistencia a los ácidos"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:113,text:"¿Qué es el entrepiso mixto?",opts:["Losa de hormigón armado maciza","Sistema estructural que combina vigas de acero o madera con losa de hormigón","Losa de madera sola","Losa prefabricada"],ans:1,topic:"Construcciones Complementarias",diff:"medio"},
+  {id:114,text:"La lana de vidrio se usa principalmente para:",opts:["Impermeabilización","Aislación térmica y acústica","Material estructural","Terminación superficial"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+  {id:115,text:"¿Qué es una junta de dilatación?",opts:["Unión rígida entre elementos","Separación entre elementos constructivos para absorber cambios de temperatura y evitar fisuras","Junta de impermeabilización","Unión soldada"],ans:1,topic:"Construcciones Complementarias",diff:"fácil"},
+
+  // ── ALBAÑILERÍA Y FUNDACIONES ──────────────────
+  {id:116,text:"¿Cuál es la función de una zapata corrida?",opts:["Soportar una columna aislada","Soportar muros continuos distribuyendo la carga en el terreno","Soportar pilares metálicos","Nivelar el terreno"],ans:1,topic:"Albañilería y Fundaciones",diff:"fácil"},
+  {id:117,text:"¿Qué es la tensión admisible del suelo?",opts:["La resistencia del hormigón","La carga máxima por unidad de área que puede soportar el terreno sin falla ni asentamiento excesivo","La resistencia del acero","La presión del agua subterránea"],ans:1,topic:"Albañilería y Fundaciones",diff:"medio"},
+  {id:118,text:"¿Para qué se realiza el ensayo de penetración estándar (SPT)?",opts:["Para medir la humedad del suelo","Para determinar la resistencia del suelo y su clasificación","Para calcular el peso del suelo","Para medir el nivel freático"],ans:1,topic:"Albañilería y Fundaciones",diff:"difícil"},
+  {id:119,text:"¿Qué tipo de suelo tiene mayor capacidad portante?",opts:["Arcilla blanda","Arena suelta","Roca dura o suelo granular compactado","Limo"],ans:2,topic:"Albañilería y Fundaciones",diff:"fácil"},
+  {id:120,text:"¿Qué es un pilotín?",opts:["Pilar de grandes dimensiones","Elemento de fundación indirecta de pequeño diámetro para suelos de baja capacidad portante","Columna de hormigón armado","Base corrida"],ans:1,topic:"Albañilería y Fundaciones",diff:"medio"},
+  {id:121,text:"¿Cuál es la diferencia entre fundación directa e indirecta?",opts:["La directa usa pilotes, la indirecta usa zapatas","La directa apoya en el suelo superficialmente, la indirecta transfiere cargas a capas más profundas mediante pilotes","No hay diferencia","La directa es más costosa"],ans:1,topic:"Albañilería y Fundaciones",diff:"medio"},
+  {id:122,text:"¿Qué es la submuración?",opts:["Construcción de un nuevo cimiento por debajo del existente para reforzarlo o profundizarlo","Demolición de un muro","Impermeabilización de fundaciones","Excavación de sótano"],ans:0,topic:"Albañilería y Fundaciones",diff:"difícil"},
+  {id:123,text:"¿Cuál es la función de un muro de contención?",opts:["Soportar cargas verticales","Resistir el empuje lateral del suelo","Solo dividir espacios","Soportar la cubierta"],ans:1,topic:"Albañilería y Fundaciones",diff:"fácil"},
+  {id:124,text:"¿Qué es el entibamiento de zanjas?",opts:["El relleno de zanjas con hormigón","El apuntalamiento lateral de las paredes de una zanja para evitar su derrumbe","La nivelación del fondo de la zanja","La impermeabilización"],ans:1,topic:"Albañilería y Fundaciones",diff:"medio"},
+  {id:125,text:"¿Cuál es la profundidad mínima de fundación en zona de heladas?",opts:["Depende solo del suelo, independiente del clima","Debe estar por debajo de la profundidad de congelamiento","30 cm siempre","50 cm siempre"],ans:1,topic:"Albañilería y Fundaciones",diff:"difícil"},
+
+  // ── LEGISLACIÓN DE LA CONSTRUCCIÓN ─────────────
+  {id:126,text:"¿Qué regula la Ley 22.250?",opts:["La propiedad horizontal","El régimen laboral de la industria de la construcción","Los contratos de locación","Las obras públicas"],ans:1,topic:"Legislación de la Construcción",diff:"medio"},
+  {id:127,text:"¿Qué es la propiedad horizontal?",opts:["Propiedad de terrenos rurales","Régimen jurídico para edificios divididos en unidades funcionales independientes (Ley 13.512)","Propiedad de una sola planta","Propiedad compartida sin división"],ans:1,topic:"Legislación de la Construcción",diff:"fácil"},
+  {id:128,text:"¿Qué es una servidumbre en derecho de construcción?",opts:["Un contrato de obra","Un derecho real que impone una limitación a la propiedad en beneficio de otra","Un tipo de contrato de trabajo","Una multa municipal"],ans:1,topic:"Legislación de la Construcción",diff:"medio"},
+  {id:129,text:"¿Qué es la medianería?",opts:["La distancia entre edificios","El muro divisorio entre dos propiedades que pertenece en condominio a los dueños de ambos predios","El alero del edificio","La distancia al eje de calle"],ans:1,topic:"Legislación de la Construcción",diff:"fácil"},
+  {id:130,text:"Según el Código Civil, ¿cuántos años es responsable el constructor por ruina de obra?",opts:["3 años","5 años","10 años","20 años"],ans:2,topic:"Legislación de la Construcción",diff:"difícil"},
+  {id:131,text:"¿Qué es un pliego de condiciones?",opts:["El presupuesto de obra","El documento que establece las condiciones técnicas y legales que rigen una obra o licitación","El contrato de trabajo","El plano de proyecto"],ans:1,topic:"Legislación de la Construcción",diff:"medio"},
+  {id:132,text:"¿Qué es el FOT en urbanismo?",opts:["Factor de Ocupación Total, relación entre superficie edificable y superficie del terreno","Factor de Ocupación del Terreno (en planta)","Fondos de Obras Tributarias","Fondo de Terreno"],ans:0,topic:"Legislación de la Construcción",diff:"difícil"},
+  {id:133,text:"¿Qué es el FOS?",opts:["Factor de Ocupación del Suelo, porcentaje del terreno que puede cubrirse en planta baja","Fondo de Obras Sanitarias","Factor de Oscilación Sísmica","Financiamiento de Obras Sociales"],ans:0,topic:"Legislación de la Construcción",diff:"difícil"},
+  {id:134,text:"¿Qué es la locación de obra?",opts:["Alquiler de una propiedad","Contrato por el cual una parte se compromete a realizar una obra determinada a cambio de un precio","Contrato de trabajo en relación de dependencia","Permiso de obra"],ans:1,topic:"Legislación de la Construcción",diff:"medio"},
+  {id:135,text:"¿Cuál es la incumbencia profesional del MMO?",opts:["Solo proyectos de hasta 50 m²","Dirección técnica de obras de hasta cierta envergadura según la legislación provincial","Sin límite en ningún tipo de obra","Solo obras de hormigón"],ans:1,topic:"Legislación de la Construcción",diff:"medio"},
+
+  // ── ARQUITECTURA ───────────────────────────────
+  {id:136,text:"¿Qué es la arquitectura gótica?",opts:["Estilo del Imperio Romano","Estilo medieval caracterizado por arcos apuntados, bóvedas de crucería y arbotantes","Arquitectura griega clásica","Arquitectura del Renacimiento italiano"],ans:1,topic:"Arquitectura",diff:"fácil"},
+  {id:137,text:"¿Qué es el 'partido arquitectónico'?",opts:["La estructura portante","La idea o concepto generador del proyecto que define la organización espacial","Los materiales elegidos","El presupuesto del proyecto"],ans:1,topic:"Arquitectura",diff:"medio"},
+  {id:138,text:"¿Quién fue Le Corbusier?",opts:["Arquitecto neoclásico del siglo XVIII","Arquitecto suizo-francés del Movimiento Moderno, pionero del racionalismo","Arquitecto barroco italiano","Arquitecto gótico medieval"],ans:1,topic:"Arquitectura",diff:"fácil"},
+  {id:139,text:"¿Qué es la Bauhaus?",opts:["Escuela de arquitectura barroca","Influyente escuela alemana de diseño y arquitectura fundada en 1919 por Walter Gropius","Movimiento arquitectónico neoclásico","Estilo decorativo francés"],ans:1,topic:"Arquitectura",diff:"medio"},
+  {id:140,text:"¿Qué es la zonificación en arquitectura?",opts:["La pintura de las zonas del edificio","La división del programa en áreas funcionales según su uso y relaciones espaciales","El cálculo estructural por zonas","La distribución del presupuesto"],ans:1,topic:"Arquitectura",diff:"fácil"},
+  {id:141,text:"¿Qué es la triada vitruviana?",opts:["Los tres órdenes griegos","Los tres principios de la arquitectura según Vitruvio: firmitas (solidez), utilitas (funcionalidad) y venustas (belleza)","Las tres etapas del proyecto","Los tres tipos de columnas"],ans:1,topic:"Arquitectura",diff:"medio"},
+  {id:142,text:"¿Qué caracteriza al estilo Barroco en arquitectura?",opts:["Simplicidad y austeridad","Ornamentación exuberante, dinamismo y teatralidad","Líneas rectas y geometría pura","Uso exclusivo del arco de medio punto"],ans:1,topic:"Arquitectura",diff:"fácil"},
+  {id:143,text:"¿Qué es el deconstructivismo en arquitectura?",opts:["Demolición de edificios","Corriente que fragmenta las formas convencionales generando composiciones irregulares y dinámicas (Ej: Frank Gehry)","Estilo clásico renovado","Arquitectura de bajo costo"],ans:1,topic:"Arquitectura",diff:"difícil"},
+  {id:144,text:"¿Qué es el anteproyecto?",opts:["El proyecto definitivo","La etapa preliminar del diseño que muestra la idea general sin detalles constructivos","El plano de instalaciones","El cómputo métrico"],ans:1,topic:"Arquitectura",diff:"fácil"},
+  {id:145,text:"La arquitectura orgánica está asociada a:",opts:["Le Corbusier","Frank Lloyd Wright y su filosofía de integrar edificio y naturaleza","Mies Van der Rohe","Gropius"],ans:1,topic:"Arquitectura",diff:"medio"},
+
+  // ── CÓMPUTOS Y PRESUPUESTOS ────────────────────
+  {id:146,text:"¿Qué es el cómputo métrico?",opts:["El presupuesto total de la obra","La medición y cuantificación de todos los trabajos y materiales de una obra","Solo el cálculo de materiales","La programación de tareas"],ans:1,topic:"Cómputos y Presupuestos",diff:"fácil"},
+  {id:147,text:"¿Qué es el análisis de precios unitarios?",opts:["La suma de todos los costos","El cálculo detallado del costo de una unidad de medida de un rubro (materiales + mano de obra + equipos + gastos generales)","Solo el costo de materiales","El precio final al comitente"],ans:1,topic:"Cómputos y Presupuestos",diff:"medio"},
+  {id:148,text:"¿Cuál es la unidad de medida del rubro mampostería de ladrillos?",opts:["kg","m lineal","m²","m³"],ans:2,topic:"Cómputos y Presupuestos",diff:"fácil"},
+  {id:149,text:"¿Cuál es la unidad de medida del rubro hormigón armado?",opts:["m²","m³","kg","m lineal"],ans:1,topic:"Cómputos y Presupuestos",diff:"fácil"},
+  {id:150,text:"¿Qué es el factor K en presupuestos?",opts:["El costo de los materiales","Coeficiente que incluye gastos generales, beneficio e impuestos sobre el costo directo","La mano de obra","El costo de equipos"],ans:1,topic:"Cómputos y Presupuestos",diff:"medio"},
+  {id:151,text:"¿Qué es la mano de obra directa?",opts:["Los materiales de construcción","La fuerza de trabajo que interviene directamente en la ejecución de los trabajos","Los gastos administrativos","El equipamiento de oficina"],ans:1,topic:"Cómputos y Presupuestos",diff:"fácil"},
+  {id:152,text:"¿Cuántos ladrillos comunes de 5x12x25 cm entran en 1 m² de muro de 25 cm a tizón?",opts:["40","60","80","100"],ans:1,topic:"Cómputos y Presupuestos",diff:"difícil"},
+  {id:153,text:"¿Qué son los gastos generales en un presupuesto?",opts:["El costo de materiales","Costos indirectos: administración, alquiler de oficina, seguros, garantías, financiación","El beneficio del contratista","El IVA"],ans:1,topic:"Cómputos y Presupuestos",diff:"medio"},
+  {id:154,text:"¿Qué es el esponjamiento del suelo?",opts:["La compactación del terreno","El aumento de volumen del suelo al ser excavado respecto al volumen en estado natural","La humedad del suelo","El asentamiento del suelo"],ans:1,topic:"Cómputos y Presupuestos",diff:"medio"},
+  {id:155,text:"¿Qué es la certificación de obra?",opts:["El permiso municipal","El comprobante de pago parcial por avance de obra, según lo ejecutado en el período","El plano as-built","La recepción definitiva"],ans:1,topic:"Cómputos y Presupuestos",diff:"medio"},
+
+  // ── INSTALACIONES ──────────────────────────────
+  {id:156,text:"¿Cuál es la función de la llave termomagnética?",opts:["Regular el caudal de agua","Proteger el circuito eléctrico contra sobrecargas y cortocircuitos","Medir el consumo eléctrico","Controlar la temperatura"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:157,text:"¿Qué es la puesta a tierra en instalaciones eléctricas?",opts:["La instalación en el piso","La conexión de partes metálicas al suelo para seguridad ante fallas de aislación","El cable de fase","La conexión al medidor"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:158,text:"¿Cuál es el caudal mínimo de agua para un inodoro?",opts:["0.05 l/s","0.10 l/s","0.30 l/s","0.50 l/s"],ans:1,topic:"Instalaciones",diff:"difícil"},
+  {id:159,text:"¿Qué es el sifón hidráulico en instalaciones sanitarias?",opts:["Bomba de agua","Cierre hidráulico que impide el paso de gases de las cloacas al interior","Válvula de retención","Medidor de caudal"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:160,text:"¿Cuál es la diferencia entre instalación de agua fría y caliente?",opts:["Solo el color de las cañerías","La temperatura del agua que conducen y los materiales apropiados para cada temperatura","No hay diferencia técnica","Solo la presión"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:161,text:"¿Qué es un termostato?",opts:["Medidor de presión","Dispositivo que controla la temperatura activando o desactivando el sistema de calefacción o refrigeración","Válvula de seguridad","Regulador de caudal"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:162,text:"¿Cuál es la presión de suministro de gas natural en viviendas?",opts:["Alta presión","Media presión","Baja presión (menos de 4 kPa)","Muy alta presión"],ans:2,topic:"Instalaciones",diff:"medio"},
+  {id:163,text:"¿Qué es la instalación cloacal?",opts:["Instalación de agua potable","Sistema de desagüe de aguas residuales hacia la red pública o fosa séptica","Instalación eléctrica subterránea","Sistema de agua de lluvia"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:164,text:"¿Cuál es la pendiente mínima de las cañerías de desagüe?",opts:["0.5%","1% al 2%","5%","10%"],ans:1,topic:"Instalaciones",diff:"medio"},
+  {id:165,text:"¿Qué es la ventilación mecánica en edificios?",opts:["Ventanas grandes","Sistema de movimiento forzado de aire mediante ventiladores para renovar el aire interior","Ductos de calefacción","Chimeneas"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:166,text:"¿Cuántos voltios tiene la tensión estándar de la red domiciliaria en Argentina?",opts:["110 V","127 V","220 V","380 V"],ans:2,topic:"Instalaciones",diff:"fácil"},
+  {id:167,text:"¿Qué es un circuito eléctrico trifásico?",opts:["Circuito con tres fases de corriente alterna desfasadas 120° entre sí, usado en industria y equipos de potencia","Circuito domiciliario común","Circuito de baja tensión","Circuito de señales"],ans:0,topic:"Instalaciones",diff:"difícil"},
+  {id:168,text:"¿Para qué se usa la cañería de PVC en instalaciones sanitarias?",opts:["Solo para agua caliente","Para agua fría y desagües por su resistencia química y bajo costo","Solo para gas","Para instalaciones eléctricas"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:169,text:"¿Qué es el aire acondicionado split?",opts:["Equipo todo en uno","Sistema con unidad interior (evaporadora) y unidad exterior (condensadora) separadas","Sistema centralizado","Sistema de ventilación simple"],ans:1,topic:"Instalaciones",diff:"fácil"},
+  {id:170,text:"¿Cuál es la función del desagüe pluvial?",opts:["Llevar aguas residuales","Conducir el agua de lluvia para evitar inundaciones y daños en la construcción","Proveer agua potable","Drenar las aguas subterráneas"],ans:1,topic:"Instalaciones",diff:"fácil"},
+
+  // ── TOPOGRAFÍA Y OBRAS VIALES ──────────────────
+  {id:171,text:"¿Qué es la altimetría?",opts:["El estudio de superficies horizontales","La rama de la topografía que estudia el relieve del terreno y las diferencias de altura","La medición de distancias horizontales","El estudio de coordenadas geográficas"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+  {id:172,text:"¿Qué es una curva de nivel?",opts:["La curva de una carretera","Línea que une puntos del terreno a la misma cota o altura","El perfil longitudinal de una ruta","La línea de pendiente"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+  {id:173,text:"¿Para qué se usa el teodolito?",opts:["Medir distancias","Medir ángulos horizontales y verticales con precisión","Medir alturas de edificios","Compactar suelos"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+  {id:174,text:"¿Qué es la poligonal cerrada?",opts:["Figura topográfica que empieza y termina en el mismo punto, usada para levantamientos de terreno","Línea recta de medición","Curva de nivel cerrada","Perfil de terreno"],ans:0,topic:"Topografía y Obras Viales",diff:"medio"},
+  {id:175,text:"¿Qué es el replanteo topográfico?",opts:["La medición del terreno natural","La marcación en el terreno de los puntos del proyecto para guiar la construcción","El cálculo de áreas","La nivelación del terreno"],ans:1,topic:"Topografía y Obras Viales",diff:"medio"},
+  {id:176,text:"¿Qué es la Estación Total?",opts:["La estación meteorológica de una obra","Instrumento topográfico que integra teodolito, distanciómetro y computadora para mediciones precisas","El equipo de compactación","La casilla de obra"],ans:1,topic:"Topografía y Obras Viales",diff:"medio"},
+  {id:177,text:"¿Qué es un terraplenamientos?",opts:["Excavación profunda","Acumulación de tierra para elevar el nivel del terreno en obra vial","Capa de rodamiento","Excavación de zanjas"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+  {id:178,text:"¿Cuál es la función de las cunetas en obras viales?",opts:["Soportar cargas del tránsito","Conducir el agua de lluvia fuera de la calzada para evitar daños","Señalizar la vía","Separar carriles"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+  {id:179,text:"¿Qué es la taquimetría?",opts:["Medición rápida de velocidades","Método topográfico para determinar posición y cota de puntos mediante ángulos y distancias estadimétricas","Cálculo de volúmenes de tierra","Compactación de suelos"],ans:1,topic:"Topografía y Obras Viales",diff:"difícil"},
+  {id:180,text:"¿Qué es el desmonte en obras viales?",opts:["La construcción de un puente","El corte y extracción del terreno para bajar el nivel en zonas altas del trazado","El relleno del terreno","La compactación del suelo"],ans:1,topic:"Topografía y Obras Viales",diff:"fácil"},
+
+  // ── ADMINISTRACIÓN Y CONDUCCIÓN DE OBRAS ───────
+  {id:181,text:"¿Qué es el diagrama de Gantt?",opts:["Un diagrama de fuerzas","Un gráfico de barras que muestra el cronograma de tareas de una obra en el tiempo","Un organigrama de empresa","Un diagrama de flujo financiero"],ans:1,topic:"Administración y Conducción de Obras",diff:"fácil"},
+  {id:182,text:"¿Qué es el método PERT?",opts:["Técnica de análisis de precios","Program Evaluation and Review Technique: método de planificación que determina el camino crítico y probabilidades","Sistema de contabilidad","Método de cálculo estructural"],ans:1,topic:"Administración y Conducción de Obras",diff:"medio"},
+  {id:183,text:"¿Qué es el camino crítico (CPM)?",opts:["El camino de acceso a la obra","La secuencia de tareas que determina la duración mínima del proyecto; su retraso prolonga la obra","El recorrido del inspector","La ruta de materiales"],ans:1,topic:"Administración y Conducción de Obras",diff:"medio"},
+  {id:184,text:"¿Qué es el obrador?",opts:["El trabajador principal","El espacio físico organizado dentro de la obra donde se ubican oficinas, depósitos y servicios del personal","El presupuesto de obra","El libro de órdenes"],ans:1,topic:"Administración y Conducción de Obras",diff:"fácil"},
+  {id:185,text:"¿Qué es el libro de órdenes de servicio?",opts:["El registro de pedidos de materiales","Documento oficial donde el director de obra registra las instrucciones al contratista","El libro de contabilidad","El registro de accidentes"],ans:1,topic:"Administración y Conducción de Obras",diff:"medio"},
+  {id:186,text:"¿Cuál es la función del Jefe de Obra?",opts:["Diseñar el proyecto","Dirigir y coordinar la ejecución diaria de los trabajos en la obra","Calcular las estructuras","Realizar el presupuesto"],ans:1,topic:"Administración y Conducción de Obras",diff:"fácil"},
+  {id:187,text:"¿Qué es la recepción provisoria de obra?",opts:["La entrega final de obra","La recepción formal al terminar los trabajos, iniciando el período de garantía antes de la recepción definitiva","La primera visita de inspección","El primer pago"],ans:1,topic:"Administración y Conducción de Obras",diff:"medio"},
+  {id:188,text:"¿Qué es el fondo de reparo?",opts:["Dinero para imprevistos del contratista","Porcentaje retenido de cada certificado como garantía de buena ejecución, devuelto en la recepción definitiva","El presupuesto inicial","El anticipo financiero"],ans:1,topic:"Administración y Conducción de Obras",diff:"difícil"},
+  {id:189,text:"¿Qué es la planilla de locales?",opts:["Lista de los proveedores","Tabla resumen con datos de cada local del proyecto: dimensiones, superficie, terminaciones","El cronograma de pagos","Lista de materiales"],ans:1,topic:"Administración y Conducción de Obras",diff:"fácil"},
+  {id:190,text:"¿Qué es la empresa constructora tipo PYME en Argentina?",opts:["Solo empresas nacionales grandes","Pequeña o mediana empresa que ejecuta obras de construcción con personal propio","Solo empresas de ingeniería","Empresas extranjeras"],ans:1,topic:"Administración y Conducción de Obras",diff:"fácil"},
+
+  // ── CONSTRUCCIONES METÁLICAS Y MADERA ──────────
+  {id:191,text:"¿Cuál es la ventaja principal de las estructuras metálicas respecto al hormigón?",opts:["Menor costo siempre","Mayor resistencia al fuego","Mayor relación resistencia/peso permitiendo mayores luces","Mayor durabilidad en ambientes húmedos"],ans:2,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:192,text:"¿Qué es el pandeo en una columna metálica?",opts:["La corrosión del acero","La inestabilidad lateral de una barra comprimida esbelta al superar la carga crítica","La flexión por carga vertical","La torsión de la sección"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:193,text:"¿Qué tipo de unión se usa para conectar perfiles metálicos en obra?",opts:["Solo soldadura","Solo tornillos","Soldadura en taller y tornillos de alta resistencia en obra","Solo remaches"],ans:2,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:194,text:"¿Cuál es la principal desventaja del acero en construcción?",opts:["Baja resistencia mecánica","Vulnerabilidad a la corrosión y pérdida de resistencia a altas temperaturas","Peso excesivo","Dificultad de producción"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"fácil"},
+  {id:195,text:"¿Qué es una nave industrial?",opts:["Edificio de viviendas","Estructura de gran luz libre para uso industrial, típicamente con cubierta metálica sobre cerchas","Edificio de oficinas","Estructura prefabricada de hormigón"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"fácil"},
+  {id:196,text:"¿Cuál es la función de los arriostramientos en estructuras metálicas?",opts:["Soportar cargas verticales","Dar estabilidad lateral y resistir las cargas horizontales de viento o sismo","Conectar columnas y vigas","Reducir el peso propio"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:197,text:"¿Qué es la madera laminada encolada?",opts:["Madera natural maciza","Producto de ingeniería formado por láminas de madera pegadas con adhesivos, para grandes estructuras","Madera aglomerada","Madera terciada"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:198,text:"¿Qué es la corrosión galvánica?",opts:["Corrosión por temperatura","Corrosión acelerada que ocurre cuando dos metales diferentes están en contacto en presencia de electrolito","Corrosión por humedad sola","Corrosión superficial por pintura"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"difícil"},
+  {id:199,text:"¿Qué tipo de perfiles laminados se usan más en estructuras metálicas?",opts:["Solo tubos cuadrados","Perfiles IPE (doble T) para vigas y HEB para columnas","Solo ángulos","Solo planchuelas"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"medio"},
+  {id:200,text:"¿Cuál es el defecto más grave de la madera para uso estructural?",opts:["El color oscuro","Los nudos de gran tamaño que reducen significativamente la resistencia","La humedad superficial","Las marcas de sierra"],ans:1,topic:"Construcciones Metálicas y Madera",diff:"fácil"},
+
+  // ── STE COMPUTACIÓN ────────────────────────────
+  {id:201,text:"¿Qué es un sistema operativo?",opts:["Una aplicación de diseño","El software base que administra los recursos del hardware y permite ejecutar aplicaciones","Un lenguaje de programación","Un tipo de hardware"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:202,text:"¿Qué función cumple la RAM en una computadora?",opts:["Almacenamiento permanente de datos","Memoria temporal que guarda los datos e instrucciones en uso para procesarlos","Controlar los periféricos","Conectar a internet"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:203,text:"¿Qué es una hoja de cálculo como Excel?",opts:["Un procesador de texto","Una aplicación organizada en filas y columnas para realizar cálculos, crear tablas y gráficos","Un programa de diseño gráfico","Un sistema operativo"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:204,text:"¿Qué es el BIM (Building Information Modeling)?",opts:["Un programa de contabilidad","Metodología de trabajo colaborativo que usa modelos 3D digitales con información completa del edificio","Un sistema operativo para obras","Un tipo de software de edición de video"],ans:1,topic:"STE Computación",diff:"medio"},
+  {id:205,text:"¿Qué es una base de datos?",opts:["Un tipo de red","Sistema organizado de almacenamiento, gestión y consulta de información estructurada","Un procesador de texto","Un lenguaje de programación"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:206,text:"¿Cuál es la función principal de AutoCAD?",opts:["Editar fotografías","Crear dibujos técnicos y planos en 2D y 3D mediante computadora","Administrar bases de datos","Diseñar páginas web"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:207,text:"¿Qué es una red LAN?",opts:["Red de área amplia (continente)","Red de área local que conecta computadoras en un espacio limitado como una oficina o escuela","Red de telefonía móvil","Red de satélites"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:208,text:"¿Qué es el hardware?",opts:["Los programas de la computadora","Los componentes físicos tangibles de una computadora (procesador, disco, RAM, teclado)","El sistema operativo","Los archivos del usuario"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:209,text:"¿Qué es el software?",opts:["Los componentes físicos","El conjunto de programas, instrucciones y datos que hacen funcionar la computadora","El disco duro","El cable de red"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:210,text:"En Excel, ¿para qué se usa una fórmula con la función SUMA?",opts:["Para ordenar datos","Para calcular la suma de un rango de celdas numéricas","Para crear gráficos","Para formato de celdas"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:211,text:"¿Qué es la nube (cloud computing)?",opts:["Sistema de refrigeración","Tecnología que permite almacenar y acceder a datos y programas a través de internet en servidores remotos","Sistema de energía renovable","Tipo de red local"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:212,text:"¿Qué es un archivo DWG?",opts:["Archivo de video","Formato de archivo nativo de AutoCAD que contiene dibujos técnicos","Archivo de texto","Archivo de imagen JPG"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:213,text:"¿Qué es la programación estructurada?",opts:["Programación de obras","Paradigma de programación que usa secuencia, selección e iteración para organizar el código de forma clara","Programación orientada a objetos","Programación de bases de datos"],ans:1,topic:"STE Computación",diff:"medio"},
+  {id:214,text:"¿Qué es un virus informático?",opts:["Un tipo de hardware dañado","Programa malicioso que se reproduce y puede dañar archivos, sistemas o robar información","Un error del sistema operativo","Un tipo de red"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:215,text:"¿Para qué se usa Microsoft Word en construcción?",opts:["Diseño de planos","Redacción de documentos como memorias descriptivas, contratos e informes técnicos","Cálculo estructural","Control de instalaciones"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:216,text:"¿Qué es el procesamiento de información?",opts:["El almacenamiento de datos","La transformación de datos de entrada en información útil mediante operaciones computacionales","La transmisión de datos","El formato de archivos"],ans:1,topic:"STE Computación",diff:"medio"},
+  {id:217,text:"¿Cuál es la diferencia entre internet e intranet?",opts:["No hay diferencia","Internet es la red global pública; intranet es una red privada interna de una organización","Internet es más lento","Intranet usa otro protocolo"],ans:1,topic:"STE Computación",diff:"medio"},
+  {id:218,text:"¿Qué es el backup o copia de seguridad?",opts:["La memoria RAM","La copia de datos importantes almacenada en un lugar alternativo para recuperarlos ante pérdidas","El antivirus","La actualización del sistema"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:219,text:"¿Qué significa PDF?",opts:["Personal Data Format","Portable Document Format, formato universal para documentos que mantiene el formato en cualquier dispositivo","Program Data File","Printed Document Format"],ans:1,topic:"STE Computación",diff:"fácil"},
+  {id:220,text:"¿Qué es la propiedad intelectual del software?",opts:["El hardware de la computadora","El derecho legal del creador sobre su programa que protege contra copia y uso no autorizado","La licencia de uso gratuito","El código fuente abierto"],ans:1,topic:"STE Computación",diff:"medio"},
 ];
 
-// ── Helpers ───────────────────────────────────────────────────
-var AVC=["#F97316","#10B981","#F59E0B","#A78BFA","#F43F5E","#38BDF8","#EC4899","#34D399"];
+// ── HELPERS ────────────────────────────────────
+var AVC=["#F97316","#10B981","#F59E0B","#A78BFA","#F43F5E","#38BDF8","#EC4899","#34D399","#6366F1","#F59E0B"];
 function avCol(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%AVC.length;return AVC[h];}
 function ini(n){return n.trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();}
 function avHtml(name,size){
   size=size||34;var c=avCol(name);
   return '<div class="av" style="width:'+size+'px;height:'+size+'px;background:'+c+'20;border:2px solid '+c+'60;color:'+c+';font-size:'+Math.round(size*.36)+'px">'+ini(name)+'</div>';
 }
+var TOPICS=[...new Set(QDB.map(function(q){return q.topic;}))].sort();
+var TOPIC_COLORS={"Taller de la Especialidad":"#F97316","Dibujo Técnico":"#38BDF8","Materiales de Construcción":"#10B981","Estática y Resistencia de Materiales":"#EF4444","Hormigón Armado":"#A78BFA","Construcciones Complementarias":"#F59E0B","Albañilería y Fundaciones":"#EC4899","Legislación de la Construcción":"#6366F1","Arquitectura":"#34D399","Cómputos y Presupuestos":"#F97316","Instalaciones":"#38BDF8","Topografía y Obras Viales":"#10B981","Administración y Conducción de Obras":"#F59E0B","Construcciones Metálicas y Madera":"#EF4444","STE Computación":"#A78BFA"};
+function topicColor(t){return TOPIC_COLORS[t]||"#F97316";}
 function diffTag(d){return {fácil:"tag-jade",medio:"tag-gold","difícil":"tag-red"}[d]||"tag-gold";}
 var OC=["#F97316","#10B981","#F59E0B","#A78BFA"];
+
 function genCode(){
   var L="ABCDEFGHJKLMNPQRSTUVWXYZ",D="23456789",r="";
   for(var i=0;i<3;i++)r+=L[Math.floor(Math.random()*L.length)];
-  r+="-";
-  for(var i=0;i<3;i++)r+=D[Math.floor(Math.random()*D.length)];
+  r+="-";for(var i=0;i<3;i++)r+=D[Math.floor(Math.random()*D.length)];
   return r;
 }
 function g(id){return document.getElementById(id);}
@@ -140,20 +386,21 @@ function h(id,html){var el=g(id);if(el)el.innerHTML=html;}
 function toast(msg,type){
   var el=g("toast");type=type||"ok";
   el.textContent=(type==="ok"?"✅ ":type==="err"?"❌ ":"ℹ️ ")+msg;
-  el.style.display="block";
-  clearTimeout(el._t);el._t=setTimeout(function(){el.style.display="none";},3200);
+  el.style.display="block";clearTimeout(el._t);
+  el._t=setTimeout(function(){el.style.display="none";},3200);
 }
 
-// ── State ─────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────
 var S={
-  mode:null, tab:"rooms",
-  rooms:[], monitorCode:null, monitorListener:null, monitorData:null,
-  timerInterval:null, timerSecs:20,
-  stName:"", stRoom:null, stScreen:"join",
-  stAnswers:{}, stScore:0, stListener:null, stData:null,
+  mode:null,tab:"rooms",
+  rooms:[],monitorCode:null,monitorListener:null,monitorData:null,
+  timerInterval:null,timerSecs:20,
+  stName:"",stRoom:null,stScreen:"join",
+  stAnswers:{},stScore:0,stListener:null,stData:null,
+  bankFilter:"all",bankSearch:"",
 };
 
-// ── RENDER ────────────────────────────────────────────────────
+// ── RENDER ─────────────────────────────────────
 function render(){
   g("app").innerHTML='<div class="sidebar" id="sidebar"></div><div class="main" id="main"></div>';
   renderSidebar();renderMain();
@@ -163,19 +410,18 @@ function renderSidebar(){
   var nav="";
   if(S.mode==="teacher"){
     var tabs=[{id:"rooms",i:"▣",l:"Mis Salas"},{id:"monitor",i:"◉",l:"Monitor Live"},
-              {id:"bank",i:"✦",l:"Preguntas"},{id:"results",i:"▲",l:"Resultados"}];
-    nav=tabs.map(function(t){
-      return '<div class="nav-item'+(S.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')"><span style="font-size:15px">'+t.i+'</span><span>'+t.l+'</span></div>';
-    }).join("")+'<div style="border-top:1px solid #1E2333;margin-top:8px;padding-top:8px;"><div class="nav-item" onclick="S.mode=null;render()"><span style="font-size:15px">←</span><span>Inicio</span></div></div>';
+              {id:"bank",i:"✦",l:"Banco ("+QDB.length+")"},{id:"results",i:"▲",l:"Resultados"}];
+    nav=tabs.map(function(t){return '<div class="nav-item'+(S.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')"><span style="font-size:15px">'+t.i+'</span><span>'+t.l+'</span></div>';}).join("")+
+      '<div style="border-top:1px solid #1E2333;margin-top:8px;padding-top:8px;"><div class="nav-item" onclick="S.mode=null;render()"><span style="font-size:15px">←</span><span>Inicio</span></div></div>';
   } else if(S.mode==="student"){
     nav='<div class="nav-item active"><span style="font-size:15px">🎓</span><span>Alumno</span></div><div style="border-top:1px solid #1E2333;margin-top:8px;padding-top:8px;"><div class="nav-item" onclick="leaveStudent()"><span style="font-size:15px">←</span><span>Inicio</span></div></div>';
   } else {
-    nav='<div class="nav-item" onclick="S.mode=\'teacher\';render()"><span style="font-size:15px">⚙</span><span>Docente</span></div><div class="nav-item" onclick="S.mode=\'student\';render()"><span style="font-size:15px">🎓</span><span>Alumno</span></div>';
+    nav='<div class="nav-item" onclick="S.mode=\'teacher\';render()"><span style="font-size:15px">⚙</span><span>Docente</span></div><div class="nav-item" onclick="S.mode=\'student\';S.stScreen=\'join\';render()"><span style="font-size:15px">🎓</span><span>Alumno</span></div>';
   }
   var status="";
   if(S.mode==="teacher"&&S.monitorCode) status="Sala:<br>"+S.monitorCode;
   else if(S.mode==="student"&&S.stRoom) status=S.stName+"<br>"+S.stRoom.code;
-  h("sidebar",'<div class="sb-logo"><div class="sb-logo-name">TECNI<span style="color:#F97316">QUIZ</span></div><div class="sb-logo-sub">E.T. Nº1 · CONSTR.</div></div><div style="padding:8px 0;flex:1">'+nav+'</div><div class="sb-status">'+status+'</div>');
+  h("sidebar",'<div class="sb-logo"><div class="sb-logo-name">TECNI<span style="color:#F97316">QUIZ</span></div><div class="sb-logo-sub">EET N°23 · MMO</div></div><div style="padding:8px 0;flex:1">'+nav+'</div><div class="sb-status">'+status+'</div>');
 }
 
 function renderMain(){
@@ -192,36 +438,32 @@ function renderMain(){
     if(S.stScreen==="lobby"||S.stScreen==="quiz") attachStudentListener();
   }
 }
-
 function setTab(t){S.tab=t;render();}
 
-// ── HOME ──────────────────────────────────────────────────────
+// ── HOME ───────────────────────────────────────
 function renderHome(){
-  return '<div style="max-width:520px;margin:60px auto;text-align:center" class="fu">'+
-    '<div style="font-size:52px;margin-bottom:18px">🏗️</div>'+
-    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:48px;font-weight:700;letter-spacing:-1px;line-height:1;margin-bottom:12px">TECNI<span style="color:#F97316">QUIZ</span></div>'+
-    '<p style="color:#6B7280;font-size:16px;line-height:1.75;margin-bottom:42px">Plataforma de evaluación en tiempo real.<br>El docente controla todo desde su panel.<br>Los alumnos solo necesitan un nombre y un código.</p>'+
-    '<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">'+
+  return '<div style="max-width:560px;margin:50px auto;text-align:center" class="fu">'+
+    '<div style="font-size:52px;margin-bottom:14px">🏗️</div>'+
+    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:44px;font-weight:700;letter-spacing:-1px;line-height:1;margin-bottom:8px">TECNI<span style="color:#F97316">QUIZ</span></div>'+
+    '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#374151;letter-spacing:2px;margin-bottom:12px">EET N°23 "CAUDILLOS FEDERALES" · FEDERAL, E.RÍOS</div>'+
+    '<p style="color:#6B7280;font-size:15px;line-height:1.7;margin-bottom:36px">Plataforma de evaluación para la carrera de<br><strong style="color:#9CA3AF">Maestro Mayor de Obras</strong><br>'+QDB.length+' preguntas · 15 materias · 4° a 7° año</p>'+
+    '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">'+
     '<button class="btn btn-primary btn-lg" onclick="S.mode=\'teacher\';S.tab=\'rooms\';render()">⚙ Panel Docente</button>'+
     '<button class="btn btn-lg" onclick="S.mode=\'student\';S.stScreen=\'join\';render()" style="border-color:#F9731640;color:#F97316">🎓 Soy Alumno</button>'+
     '</div>'+
-    '<div style="margin-top:36px;background:#0F1117;border:1px solid #1E2333;border-radius:10px;padding:16px 20px;text-align:left;font-size:13px;color:#6B7280;line-height:1.8">'+
-    '<strong style="color:#9CA3AF">¿Cómo funciona?</strong><br>'+
-    '1. El docente crea una sala y comparte el código<br>'+
-    '2. Los alumnos ingresan desde cualquier celular o PC<br>'+
-    '3. El docente da inicio — todos juegan en tiempo real</div></div>';
+    '<div style="margin-top:32px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:420px;margin-left:auto;margin-right:auto">'+
+    [["🏗️","Construcción"],["📐","Dibujo Técnico"],["🧱","Materiales"],["⚖️","Estática"],["🔩","H° Armado"],["💻","Computación"]].map(function(x){return '<div style="background:#0F1117;border:1px solid #1E2333;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px">'+x[0]+'</div><div style="font-size:11px;color:#374151;margin-top:4px">'+x[1]+'</div></div>';}).join("")+
+    '</div></div>';
 }
 
-// ── ROOMS ─────────────────────────────────────────────────────
+// ── ROOMS ──────────────────────────────────────
 function renderRooms(){
   return '<div class="fu"><div class="row mb14"><h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;flex:1">Mis Salas</h2><button class="btn btn-primary" onclick="openCreate()">＋ Nueva sala</button></div><div id="rooms-list"><div style="text-align:center;padding:40px 0;color:#374151"><div class="spin"></div></div></div></div><div id="create-overlay"></div>';
 }
 
 function loadRooms(){
   db.ref("rooms").get().then(function(snap){
-    var data=snap.val()||{};
-    S.rooms=Object.values(data);
-    renderRoomsList();
+    var data=snap.val()||{};S.rooms=Object.values(data);renderRoomsList();
   });
 }
 
@@ -236,59 +478,75 @@ function renderRoomsList(){
   var PL={lobby:"EN ESPERA",running:"▶ EN CURSO",ended:"FINALIZADO"};
   var PC={lobby:"tag-gold",running:"tag-ore",ended:"tag-muted"};
   el.innerHTML=S.rooms.map(function(r){
-    var c=TC[r.type]||"#F97316";
-    var students=Object.values(r.students||{}).filter(function(s){return s.online;});
-    var phase=r.phase||"lobby";
+    var c=TC[r.type]||"#F97316";var students=Object.values(r.students||{}).filter(function(s){return s.online;});var phase=r.phase||"lobby";
     return '<div class="card sr"><div class="row"><div style="width:44px;height:44px;border-radius:10px;background:'+c+'18;border:1px solid '+c+'30;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+(r.type==="live"?"⚡":r.type==="task"?"📋":r.type==="exam"?"📝":"🔩")+'</div>'+
     '<div style="flex:1;min-width:0"><div class="row mb8" style="flex-wrap:wrap;gap:6px"><span style="font-weight:700;font-size:15px">'+r.name+'</span><span class="tag tag-ore" style="font-size:10px">'+TL[r.type]+'</span><span class="tag '+PC[phase]+'" style="font-size:10px">'+PL[phase]+'</span></div>'+
     '<div class="row" style="font-size:12px;color:#4B5563;gap:14px"><span class="row" style="gap:6px"><span class="live-dot"></span>'+students.length+' en línea</span><span>❓ '+(r.questions||[]).length+' preguntas</span></div></div>'+
     '<div onclick="copyCode(\''+r.code+'\')" style="background:#080A0F;border:1px solid #1E2333;border-radius:9px;padding:9px 16px;cursor:pointer;flex-shrink:0" onmouseenter="this.style.borderColor=\'#F97316\'" onmouseleave="this.style.borderColor=\'#1E2333\'">'+
     '<div style="font-size:9px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:1.5px;margin-bottom:3px">CÓDIGO</div>'+
     '<div style="font-family:\'JetBrains Mono\',monospace;font-size:16px;font-weight:700;color:#F97316;letter-spacing:3px">'+r.code+'</div></div>'+
-    '<div class="row" style="gap:7px;flex-shrink:0"><button class="btn btn-sm" onclick="goMonitor(\''+r.code+'\')">◉ Monitor</button>'+
-    '<button class="btn btn-sm btn-danger" onclick="deleteRoom(\''+r.code+'\')">✕</button></div></div></div>';
+    '<div class="row" style="gap:7px;flex-shrink:0"><button class="btn btn-sm" onclick="goMonitor(\''+r.code+'\')">◉ Monitor</button><button class="btn btn-sm btn-danger" onclick="deleteRoom(\''+r.code+'\')">✕</button></div></div></div>';
   }).join("");
 }
 
-function copyCode(code){
-  if(navigator.clipboard) navigator.clipboard.writeText(code).catch(function(){});
-  toast("Código "+code+" copiado ✓");
-}
-
-function deleteRoom(code){
-  if(!confirm("¿Eliminar esta sala?"))return;
-  db.ref("rooms/"+code).remove();
-  S.rooms=S.rooms.filter(function(r){return r.code!==code;});
-  if(S.monitorCode===code){S.monitorCode=null;S.monitorData=null;}
-  renderRoomsList();
-  toast("Sala eliminada","info");
-}
-
+function copyCode(code){try{navigator.clipboard.writeText(code);}catch(e){}toast("Código "+code+" copiado ✓");}
+function deleteRoom(code){if(!confirm("¿Eliminar esta sala?"))return;db.ref("rooms/"+code).remove();S.rooms=S.rooms.filter(function(r){return r.code!==code;});if(S.monitorCode===code){S.monitorCode=null;S.monitorData=null;}renderRoomsList();toast("Sala eliminada","info");}
 function goMonitor(code){S.monitorCode=code;S.tab="monitor";render();}
 
-// ── CREATE ROOM ───────────────────────────────────────────────
+// ── CREATE ROOM ────────────────────────────────
 function openCreate(){
   var code=genCode();
+  var topicFilters='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
+    ['Todas','Taller de la Especialidad','Dibujo Técnico','Materiales de Construcción','Estática y Resistencia de Materiales','Hormigón Armado','Construcciones Complementarias','Albañilería y Fundaciones','Legislación de la Construcción','Arquitectura','Cómputos y Presupuestos','Instalaciones','Topografía y Obras Viales','Administración y Conducción de Obras','Construcciones Metálicas y Madera','STE Computación'].map(function(t){
+      var c=t==="Todas"?"#F97316":topicColor(t);
+      return '<button onclick="filterCreateQ(\''+t+'\')" id="ftb-'+t.replace(/[^a-z]/gi,'_')+'" style="padding:3px 10px;border-radius:14px;font-size:11px;cursor:pointer;border:1px solid '+c+'40;background:'+c+'18;color:'+c+';font-weight:600">'+t+'</button>';
+    }).join("")+'</div>';
+
   var qList=QDB.map(function(q){
-    return '<label style="display:flex;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent" onmouseenter="this.style.background=\'#11141C\'" onmouseleave="this.style.background=\'\'">'+
-    '<input type="checkbox" id="qc'+q.id+'" checked style="accent-color:#F97316;flex-shrink:0;margin-top:2px">'+
-    '<div><div style="font-size:13px;color:#F0EDE8;line-height:1.4">'+q.text+'</div>'+
-    '<div style="margin-top:4px;display:flex;gap:6px"><span class="tag tag-sky" style="font-size:10px">'+q.topic+'</span><span class="tag '+diffTag(q.diff)+'" style="font-size:10px">'+q.diff+'</span></div></div></label>';
+    return '<label id="ql'+q.id+'" style="display:flex;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;border:1px solid transparent;transition:all .12s" data-topic="'+q.topic+'" onmouseenter="this.style.background=\'#11141C\'" onmouseleave="this.style.background=\'\'">'+
+    '<input type="checkbox" id="qc'+q.id+'" style="accent-color:#F97316;flex-shrink:0;margin-top:2px">'+
+    '<div><div style="font-size:12px;color:#F0EDE8;line-height:1.4">'+q.text+'</div>'+
+    '<div style="margin-top:3px;display:flex;gap:5px"><span class="tag" style="font-size:9px;background:'+topicColor(q.topic)+'18;color:'+topicColor(q.topic)+';border:1px solid '+topicColor(q.topic)+'35">'+q.topic+'</span><span class="tag '+diffTag(q.diff)+'" style="font-size:9px">'+q.diff+'</span></div></div></label>';
   }).join("");
+
   h("create-overlay",'<div class="overlay" onclick="closeCreate()"><div class="modal" onclick="event.stopPropagation()">'+
     '<div class="modal-header"><span class="modal-title">Crear nueva sala</span><button class="close-btn" onclick="closeCreate()">×</button></div>'+
-    '<div class="modal-body"><div class="col" style="gap:16px">'+
+    '<div style="padding:20px"><div class="col" style="gap:16px">'+
     '<div><label class="field-label">Nombre de la sala</label><input type="text" id="cr-name" placeholder="Ej: Construcción II — 3°A"></div>'+
     '<div><label class="field-label">Tipo</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-    [["live","⚡ Quiz en Vivo","Todos simultáneamente"],["task","📋 Tarea","Con fecha límite"],["exam","📝 Examen","Con nota"],["practice","🔩 Práctica","Sin tiempo"]].map(function(t){
-      return '<label style="border:1px solid #1E2333;border-radius:9px;padding:11px 13px;cursor:pointer;display:block"><input type="radio" name="cr-type" value="'+t[0]+'" '+(t[0]==="live"?"checked":"")+' style="accent-color:#F97316;margin-right:6px"><span style="font-weight:700;font-size:13px">'+t[1]+'</span><br><span style="font-size:11px;color:#4B5563;padding-left:18px">'+t[2]+'</span></label>';
-    }).join("")+'</div></div>'+
-    '<div><label class="field-label">Preguntas</label><div style="max-height:200px;overflow-y:auto;border:1px solid #1E2333;border-radius:9px;padding:6px 4px">'+qList+'</div></div>'+
-    '<div><label class="field-label">Código de sala</label><div class="row"><input type="text" id="cr-code" value="'+code+'" style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:700;color:#F97316;text-align:center;letter-spacing:4px;border-color:#F9731640"><button class="btn btn-sm" onclick="g(\'cr-code\').value=\''+genCode()+'\'">↻</button></div>'+
-    '<div style="font-size:12px;color:#374151;margin-top:5px">Compartí este código con tus alumnos.</div></div>'+
+    [["live","⚡ Quiz en Vivo","Todos simultáneamente"],["task","📋 Tarea","Con fecha límite"],["exam","📝 Examen","Con nota"],["practice","🔩 Práctica","Sin tiempo"]].map(function(t){return '<label style="border:1px solid #1E2333;border-radius:9px;padding:11px 13px;cursor:pointer;display:block"><input type="radio" name="cr-type" value="'+t[0]+'" '+(t[0]==="live"?"checked":"")+' style="accent-color:#F97316;margin-right:6px"><span style="font-weight:700;font-size:13px">'+t[1]+'</span><br><span style="font-size:11px;color:#4B5563;padding-left:18px">'+t[2]+'</span></label>';}).join("")+'</div></div>'+
+    '<div><label class="field-label">Filtrar por materia</label>'+topicFilters+
+    '<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-sm" onclick="selectAllQ(true)">✓ Todas</button><button class="btn btn-sm" onclick="selectAllQ(false)">✗ Ninguna</button><span id="q-count" style="font-size:12px;color:#F97316;margin-left:auto;padding-top:6px">0 seleccionadas</span></div>'+
+    '<div style="max-height:240px;overflow-y:auto;border:1px solid #1E2333;border-radius:9px;padding:6px 4px" id="q-list">'+qList+'</div></div>'+
+    '<div><label class="field-label">Código de sala</label><div class="row"><input type="text" id="cr-code" value="'+code+'" style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:#F97316;text-align:center;letter-spacing:3px;border-color:#F9731640"><button class="btn btn-sm" onclick="g(\'cr-code\').value=genCode()">↻</button></div></div>'+
     '<div style="display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid #1E2333"><button class="btn" onclick="closeCreate()">Cancelar</button><button class="btn btn-primary" onclick="confirmCreate()">Crear sala</button></div>'+
     '</div></div></div></div>');
+  updateQCount();
 }
+
+function filterCreateQ(topic){
+  var items=document.querySelectorAll('#q-list label');
+  items.forEach(function(el){
+    el.style.display=(topic==="Todas"||el.dataset.topic===topic)?"":"none";
+  });
+}
+
+function selectAllQ(val){
+  var checks=document.querySelectorAll('#q-list input[type=checkbox]');
+  checks.forEach(function(c){
+    var lbl=c.closest('label');
+    if(!lbl||lbl.style.display!=="none") c.checked=val;
+  });
+  updateQCount();
+}
+
+function updateQCount(){
+  var n=document.querySelectorAll('#q-list input:checked').length;
+  var el=g("q-count");if(el)el.textContent=n+" seleccionadas";
+}
+
+// Add event listener after modal opens
+document.addEventListener("change",function(e){if(e.target&&e.target.closest&&e.target.closest('#q-list'))updateQCount();});
 
 function closeCreate(){h("create-overlay","");}
 
@@ -302,14 +560,11 @@ function confirmCreate(){
   if(questions.length===0){toast("Seleccioná al menos una pregunta","err");return;}
   var room={id:"R"+Date.now(),name:name,type:type,code:code,questions:questions,created:Date.now(),phase:"lobby",students:{},answers:{},currentQ:0};
   db.ref("rooms/"+code).set(room).then(function(){
-    S.rooms.unshift(room);
-    closeCreate();
-    toast('Sala "'+name+'" creada — Código: '+code);
-    renderRoomsList();
+    S.rooms.unshift(room);closeCreate();toast('Sala "'+name+'" creada — Código: '+code);renderRoomsList();
   });
 }
 
-// ── MONITOR ───────────────────────────────────────────────────
+// ── MONITOR ────────────────────────────────────
 function renderMonitor(){
   if(!S.monitorCode&&S.rooms.length>0) S.monitorCode=S.rooms[0].code;
   if(!S.monitorCode) return '<div style="text-align:center;padding:60px 0;color:#374151">Creá una sala primero.</div>';
@@ -325,100 +580,68 @@ function renderMonitor(){
     '</div></div></div>';
 }
 
-function switchMonitor(code){
-  S.monitorCode=code;
-  if(S.monitorListener){db.ref("rooms/"+S.monitorCode).off("value",S.monitorListener);S.monitorListener=null;}
-  S.monitorData=null;render();
-}
+function switchMonitor(code){S.monitorCode=code;if(S.monitorListener){db.ref("rooms/"+S.monitorCode).off("value",S.monitorListener);S.monitorListener=null;}S.monitorData=null;render();}
 
 function attachMonitor(){
   if(S.monitorListener){db.ref("rooms/"+S.monitorCode).off("value",S.monitorListener);}
-  S.monitorListener=db.ref("rooms/"+S.monitorCode).on("value",function(snap){
-    S.monitorData=snap.val();
-    updateMonitorUI();
-  });
+  S.monitorListener=db.ref("rooms/"+S.monitorCode).on("value",function(snap){S.monitorData=snap.val();updateMonitorUI();});
 }
 
 function updateMonitorUI(){
   var d=S.monitorData;if(!d)return;
   var students=Object.values(d.students||{}).filter(function(s){return s.online;});
   var qs=(d.questions||[]).map(function(id){return QDB.find(function(q){return q.id===id;});}).filter(Boolean);
-  var phase=d.phase||"lobby";
-  var qi=d.currentQ||0;
-  var curQ=qs[qi];
+  var phase=d.phase||"lobby";var qi=d.currentQ||0;var curQ=qs[qi];
   var headerEl=g("monitor-header");if(!headerEl)return;
-
   var ctrlBtns="";
-  if(phase==="lobby") ctrlBtns='<button class="btn btn-primary" onclick="startQuiz()" '+(students.length===0?"disabled":"")+'>▶ Iniciar quiz'+(students.length>0?" · "+students.length+" alumno"+(students.length!==1?"s":""):"")+' </button>';
+  if(phase==="lobby") ctrlBtns='<button class="btn btn-primary" onclick="startQuiz()" '+(students.length===0?"disabled":"")+'>▶ Iniciar'+(students.length>0?" · "+students.length+" alumno"+(students.length!==1?"s":""):"")+' </button>';
   else if(phase==="running") ctrlBtns='<button class="btn" onclick="nextQ()" style="border-color:#38BDF840;color:#38BDF8">⏭ Siguiente</button><button class="btn btn-danger" onclick="stopQuiz()">⏹ Detener</button>';
   else ctrlBtns='<button class="btn btn-success" onclick="stopQuiz()">↺ Nueva ronda</button>';
-
   var phaseTags={lobby:'<span class="tag tag-gold">EN ESPERA</span>',running:'<span class="tag tag-ore">▶ EN CURSO</span>',ended:'<span class="tag tag-muted">FINALIZADO</span>'};
-
-  headerEl.innerHTML='<div class="row" style="flex-wrap:wrap;gap:10px">'+
-    '<div><div style="font-family:\'Rajdhani\',sans-serif;font-size:20px;font-weight:700">'+(d.name||"")+'</div>'+
-    '<div class="row" style="font-size:12px;color:#4B5563;gap:12px;margin-top:3px">'+
-    '<span class="row" style="gap:6px"><span class="live-dot"></span>'+students.length+' en línea</span>'+
-    '<span style="font-family:\'JetBrains Mono\',monospace;color:#F97316">'+S.monitorCode+'</span>'+
-    (phaseTags[phase]||"")+'</div></div>'+
-    '<span class="sp"></span><div class="row" style="gap:8px">'+ctrlBtns+'</div></div>';
-
+  headerEl.innerHTML='<div class="row" style="flex-wrap:wrap;gap:10px"><div><div style="font-family:\'Rajdhani\',sans-serif;font-size:20px;font-weight:700">'+(d.name||"")+'</div><div class="row" style="font-size:12px;color:#4B5563;gap:12px;margin-top:3px"><span class="row" style="gap:6px"><span class="live-dot"></span>'+students.length+' en línea</span><span style="font-family:\'JetBrains Mono\',monospace;color:#F97316">'+S.monitorCode+'</span>'+(phaseTags[phase]||"")+'</div></div><span class="sp"></span><div class="row" style="gap:8px">'+ctrlBtns+'</div></div>';
   var leftEl=g("monitor-left");if(!leftEl)return;
   if(phase==="lobby"){
-    leftEl.innerHTML='<div class="card" style="text-align:center;padding:32px 22px">'+
-      '<div style="font-size:11px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:2px;margin-bottom:12px">CÓDIGO DE SALA</div>'+
-      '<div style="background:#080A0F;border:2px solid #F9731640;border-radius:10px;padding:16px 28px;display:inline-block;margin-bottom:18px"><div class="code-val">'+S.monitorCode+'</div></div>'+
-      '<div style="color:#4B5563;font-size:13px;line-height:1.8">Mostrá este código en el pizarrón o envialo por WhatsApp.<br>Los alumnos ingresan desde cualquier dispositivo.</div>'+
-      '<div style="margin-top:16px;padding:10px 14px;background:'+(students.length>0?"#10B98115":"#11141C")+';border:1px solid '+(students.length>0?"#10B98140":"#1E2333")+';border-radius:9px;font-size:13px;color:'+(students.length>0?"#10B981":"#374151")+'">'+
-      (students.length===0?"Esperando que ingresen los alumnos…":"✓ "+students.length+" alumno"+(students.length!==1?"s":"")+" listo"+(students.length!==1?"s":"")+". Podés iniciar.")+'</div></div>';
+    leftEl.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-size:11px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:2px;margin-bottom:10px">CÓDIGO DE SALA</div><div style="background:#080A0F;border:2px solid #F9731640;border-radius:10px;padding:14px 24px;display:inline-block;margin-bottom:16px"><div class="code-val">'+S.monitorCode+'</div></div><div style="color:#4B5563;font-size:13px;line-height:1.8">Mostrá este código en el pizarrón.<br>Los alumnos ingresan desde cualquier dispositivo.</div><div style="margin-top:14px;padding:10px 14px;background:'+(students.length>0?"#10B98115":"#11141C")+';border:1px solid '+(students.length>0?"#10B98140":"#1E2333")+';border-radius:9px;font-size:13px;color:'+(students.length>0?"#10B981":"#374151")+'">'+
+    (students.length===0?"Esperando que ingresen los alumnos…":"✓ "+students.length+" alumno"+(students.length!==1?"s":"")+" listo"+(students.length!==1?"s":"")+". Podés iniciar.")+'</div></div>';
   } else if(phase==="running"&&curQ){
     var answered=Object.values(d.answers||{}).filter(function(a){return a[qi]!==undefined;}).length;
     var answPct=Math.round((answered/Math.max(1,students.length))*100);
-    leftEl.innerHTML='<div class="card">'+
-      '<div class="row mb8" style="flex-wrap:wrap;gap:6px">'+
-      '<span class="tag tag-sky" style="font-size:10px">'+(qi+1)+'/'+qs.length+'</span>'+
-      '<span class="tag tag-sky" style="font-size:10px">'+curQ.topic+'</span>'+
+    var tc=topicColor(curQ.topic);
+    leftEl.innerHTML='<div class="card"><div class="row mb8" style="flex-wrap:wrap;gap:6px">'+
+      '<span class="tag" style="font-size:10px;background:'+tc+'18;color:'+tc+';border:1px solid '+tc+'35">'+(qi+1)+'/'+qs.length+'</span>'+
+      '<span class="tag" style="font-size:10px;background:'+tc+'18;color:'+tc+';border:1px solid '+tc+'35">'+curQ.topic+'</span>'+
       '<span class="tag '+diffTag(curQ.diff)+'" style="font-size:10px">'+curQ.diff+'</span>'+
-      '<span class="sp"></span><span id="t-num" style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700;color:#F97316">'+S.timerSecs+'</span></div>'+
+      '<span class="sp"></span><span id="t-num" style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;color:#F97316">'+S.timerSecs+'</span></div>'+
       '<div class="pbar mb14" style="height:4px"><div class="pbar-fill" id="t-bar" style="width:'+((S.timerSecs/20)*100)+'%"></div></div>'+
-      '<div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:600;line-height:1.4;margin-bottom:13px">'+curQ.text+'</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
-      curQ.opts.map(function(o,i){
-        return '<div style="padding:8px 11px;border-radius:8px;font-size:12px;background:'+(i===curQ.ans?"#10B98115":"#080A0F")+';border:1px solid '+(i===curQ.ans?"#10B98150":"#1E2333")+';display:flex;gap:7px;align-items:center">'+
-          '<span style="width:20px;height:20px;border-radius:5px;background:#F9731620;color:#F97316;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:\'JetBrains Mono\',monospace">'+String.fromCharCode(65+i)+'</span>'+
-          '<span style="color:'+(i===curQ.ans?"#10B981":"#4B5563")+'">'+o+'</span></div>';
-      }).join("")+
-      '</div><div class="row"><span style="font-size:12px;color:#374151">'+answered+'/'+students.length+' respondieron</span><span class="sp"></span>'+
-      '<div style="width:120px"><div class="pbar"><div class="pbar-fill" style="width:'+answPct+'%;background:#10B981"></div></div></div></div></div>';
+      '<div style="font-family:\'Rajdhani\',sans-serif;font-size:16px;font-weight:600;line-height:1.4;margin-bottom:12px">'+curQ.text+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">'+
+      curQ.opts.map(function(o,i){return '<div style="padding:7px 10px;border-radius:7px;font-size:12px;background:'+(i===curQ.ans?"#10B98115":"#080A0F")+';border:1px solid '+(i===curQ.ans?"#10B98150":"#1E2333")+';display:flex;gap:6px;align-items:center"><span style="width:18px;height:18px;border-radius:4px;background:#F9731620;color:#F97316;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+String.fromCharCode(65+i)+'</span><span style="color:'+(i===curQ.ans?"#10B981":"#4B5563")+'">'+o+'</span></div>';}).join("")+
+      '</div><div class="row"><span style="font-size:12px;color:#374151">'+answered+'/'+students.length+' respondieron</span><span class="sp"></span><div style="width:100px"><div class="pbar"><div class="pbar-fill" style="width:'+answPct+'%;background:#10B981"></div></div></div></div></div>';
   } else if(phase==="ended"){
     clearInterval(S.timerInterval);
-    leftEl.innerHTML='<div class="card" style="text-align:center;padding:36px 22px"><div style="font-size:44px;margin-bottom:10px">🏆</div><div style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px">Quiz finalizado</div><div style="color:#4B5563">'+students.length+' participantes</div></div>';
+    leftEl.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:44px;margin-bottom:10px">🏆</div><div style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px">Quiz finalizado</div><div style="color:#4B5563">'+students.length+' participantes</div></div>';
   }
-
-  // Students list
   var countEl=g("mon-count");if(countEl)countEl.textContent=students.length;
   var stEl=g("mon-students");if(!stEl)return;
   if(students.length===0){stEl.innerHTML='<div style="text-align:center;padding:28px 0;color:#374151;font-size:13px">Esperando alumnos…</div>';return;}
+  var qi2=d.currentQ||0;
   stEl.innerHTML=students.slice().sort(function(a,b){return(b.score||0)-(a.score||0);}).map(function(s,i){
-    var didAns=(d.answers||{})[s.name]&&(d.answers||{})[s.name][qi]!==undefined;
+    var didAns=(d.answers||{})[s.name]&&(d.answers||{})[s.name][qi2]!==undefined;
     return '<div class="row sr" style="padding:8px 12px;background:#11141C;border-radius:8px;border:1px solid '+(didAns&&phase==="running"?"#10B98130":"#1E2333")+';margin-bottom:6px">'+
       '<span style="font-size:14px;width:22px;text-align:center">'+(i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1))+'</span>'+
-      avHtml(s.name,28)+
-      '<span style="flex:1;font-size:13px;font-weight:600">'+s.name+'</span>'+
+      avHtml(s.name,28)+'<span style="flex:1;font-size:13px;font-weight:600">'+s.name+'</span>'+
       (phase==="running"?'<span style="font-size:11px;font-family:\'JetBrains Mono\',monospace;color:'+(didAns?"#10B981":"#374151")+'">'+(didAns?"✓":"")+'</span>':"")+
       '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:#F97316">'+(s.score||0).toLocaleString()+'</span></div>';
   }).join("");
 }
 
-// ── Quiz control ──────────────────────────────────────────────
 function startQuiz(){
   var d=S.monitorData;if(!d)return;
   var students=Object.values(d.students||{}).filter(function(s){return s.online;});
   if(students.length===0)return;
   clearInterval(S.timerInterval);S.timerSecs=20;
   db.ref("rooms/"+S.monitorCode).update({phase:"running",currentQ:0,answers:{}});
-  startTeacherTimer();
-  toast("¡Quiz iniciado!");
+  startTeacherTimer();toast("¡Quiz iniciado!");
 }
 
 function startTeacherTimer(){
@@ -437,12 +660,8 @@ function nextQ(){
   var d=S.monitorData;if(!d)return;
   var qs=(d.questions||[]).map(function(id){return QDB.find(function(q){return q.id===id;});}).filter(Boolean);
   var next=(d.currentQ||0)+1;
-  if(next>=qs.length){
-    db.ref("rooms/"+S.monitorCode).update({phase:"ended"});
-  } else {
-    db.ref("rooms/"+S.monitorCode).update({currentQ:next});
-    startTeacherTimer();
-  }
+  if(next>=qs.length){db.ref("rooms/"+S.monitorCode).update({phase:"ended"});}
+  else{db.ref("rooms/"+S.monitorCode).update({currentQ:next});startTeacherTimer();}
 }
 
 function stopQuiz(){
@@ -451,74 +670,61 @@ function stopQuiz(){
   toast("Sala volvió al lobby.","info");
 }
 
-// ── BANK ─────────────────────────────────────────────────────
+// ── BANK ──────────────────────────────────────
 function renderBank(){
-  return '<div class="fu"><h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;margin-bottom:18px">Banco de Preguntas</h2>'+
-    QDB.map(function(q){
-      return '<div class="card sr" style="padding:14px 18px"><div style="font-size:14px;font-weight:500;margin-bottom:8px;line-height:1.5">'+q.text+'</div>'+
-        '<div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag tag-sky">'+q.topic+'</span><span class="tag '+diffTag(q.diff)+'">'+q.diff+'</span>'+
-        '<span style="font-size:11px;color:#374151;font-family:\'JetBrains Mono\',monospace">✓ '+q.opts[q.ans]+'</span></div></div>';
-    }).join("")+'</div>';
-}
+  var filtered=QDB.filter(function(q){
+    var matchTopic=S.bankFilter==="all"||q.topic===S.bankFilter;
+    var matchSearch=!S.bankSearch||q.text.toLowerCase().includes(S.bankSearch.toLowerCase());
+    return matchTopic&&matchSearch;
+  });
+  var topicBtns=['<button class="subject-btn" style="background:'+(S.bankFilter==="all"?"#F97316":"#11141C")+';color:'+(S.bankFilter==="all"?"#080A0F":"#9CA3AF")+';border:1px solid '+(S.bankFilter==="all"?"#F97316":"#1E2333")+'" onclick="setBankFilter(\'all\')">Todas ('+QDB.length+')</button>'].concat(
+    TOPICS.map(function(t){var c=topicColor(t);var n=QDB.filter(function(q){return q.topic===t;}).length;return '<button class="subject-btn" style="background:'+(S.bankFilter===t?c+"30":"#11141C")+';color:'+(S.bankFilter===t?c:"#6B7280")+';border:1px solid '+(S.bankFilter===t?c+"60":"#1E2333")+'" onclick="setBankFilter(\''+t.replace(/'/g,"\\'")+'\')">'+(t.split(" ")[0])+" ("+n+')</button>';})
+  ).join("");
 
-// ── RESULTS ───────────────────────────────────────────────────
+  return '<div class="fu">'+
+    '<div class="row mb14"><h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;flex:1">Banco de Preguntas</h2><span style="font-size:13px;color:#F97316;font-family:\'JetBrains Mono\',monospace">'+filtered.length+' / '+QDB.length+'</span></div>'+
+    '<input type="text" placeholder="Buscar pregunta…" value="'+S.bankSearch+'" oninput="S.bankSearch=this.value;renderMain()" style="margin-bottom:12px">'+
+    '<div class="subject-filter">'+topicBtns+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    filtered.map(function(q){var tc=topicColor(q.topic);return '<div class="card sr" style="padding:12px 16px"><div style="font-size:13px;font-weight:500;margin-bottom:7px;line-height:1.5">'+q.text+'</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag" style="font-size:10px;background:'+tc+'18;color:'+tc+';border:1px solid '+tc+'35">'+q.topic+'</span><span class="tag '+diffTag(q.diff)+'" style="font-size:10px">'+q.diff+'</span><span style="font-size:11px;color:#374151;font-family:\'JetBrains Mono\',monospace">✓ '+q.opts[q.ans]+'</span></div></div>';}).join("")+
+    '</div></div>';
+}
+function setBankFilter(f){S.bankFilter=f;renderMain();}
+
+// ── RESULTS ────────────────────────────────────
 function renderResults(){
   if(S.rooms.length===0) return '<div style="text-align:center;padding:60px 0;color:#374151">No hay salas todavía.</div>';
   var selOpts=S.rooms.map(function(r){return '<option value="'+r.code+'">'+r.name+'</option>';}).join("");
-  return '<div class="fu"><div class="row mb14"><h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;flex:1">Resultados</h2>'+
-    '<select onchange="loadResultsFor(this.value)" style="background:#080A0F;border:1px solid #1E2333;border-radius:7px;padding:8px 12px;color:#F0EDE8;font-size:13px;outline:none">'+selOpts+'</select></div>'+
-    '<div id="results-body"><div style="text-align:center;padding:30px 0"><div class="spin"></div></div></div></div>';
+  return '<div class="fu"><div class="row mb14"><h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;flex:1">Resultados</h2><select onchange="loadResultsFor(this.value)" style="background:#080A0F;border:1px solid #1E2333;border-radius:7px;padding:8px 12px;color:#F0EDE8;font-size:13px;outline:none">'+selOpts+'</select></div><div id="results-body"><div style="text-align:center;padding:30px 0"><div class="spin"></div></div></div></div>';
 }
-
-function loadResultsInit(){
-  if(S.rooms.length>0) setTimeout(function(){loadResultsFor(S.rooms[0].code);},300);
-}
-
+function loadResultsInit(){if(S.rooms.length>0)setTimeout(function(){loadResultsFor(S.rooms[0].code);},300);}
 function loadResultsFor(code){
   var el=g("results-body");if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:30px 0"><div class="spin"></div></div>';
   db.ref("rooms/"+code+"/students").get().then(function(snap){
     var sts=Object.values(snap.val()||{}).sort(function(a,b){return(b.score||0)-(a.score||0);});
     if(sts.length===0){el.innerHTML='<div style="text-align:center;padding:40px 0;color:#374151">Sin resultados todavía.</div>';return;}
     var avg=Math.round(sts.reduce(function(a,s){return a+(s.score||0);},0)/sts.length);
-    el.innerHTML='<div class="stat-grid">'+
-      '<div class="stat-card"><div class="stat-val" style="color:#38BDF8">'+sts.length+'</div><div class="stat-lbl">Alumnos</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+avg.toLocaleString()+'</div><div class="stat-lbl">Promedio</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+(sts[0]&&sts[0].score?sts[0].score.toLocaleString():"0")+'</div><div class="stat-lbl">Máximo</div></div></div>'+
-      '<div class="card"><div class="card-title">Tabla de posiciones</div>'+
-      sts.map(function(s,i){
-        return '<div class="row sr" style="padding:10px 14px;background:#11141C;border-radius:8px;border:1px solid #1E2333;margin-bottom:7px">'+
-          '<span style="width:26px;text-align:center">'+(i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1))+'</span>'+
-          avHtml(s.name,28)+
-          '<span style="flex:1;font-size:14px;font-weight:600">'+s.name+'</span>'+
-          '<span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:14px;color:#F97316">'+(s.score||0).toLocaleString()+' pts</span></div>';
-      }).join("")+'</div>';
+    el.innerHTML='<div class="stat-grid"><div class="stat-card"><div class="stat-val" style="color:#38BDF8">'+sts.length+'</div><div class="stat-lbl">Alumnos</div></div><div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+avg.toLocaleString()+'</div><div class="stat-lbl">Promedio</div></div><div class="stat-card"><div class="stat-val" style="color:#10B981">'+(sts[0]&&sts[0].score?sts[0].score.toLocaleString():"0")+'</div><div class="stat-lbl">Máximo</div></div></div>'+
+    '<div class="card"><div class="card-title">Tabla de posiciones</div>'+sts.map(function(s,i){return '<div class="row sr" style="padding:10px 14px;background:#11141C;border-radius:8px;border:1px solid #1E2333;margin-bottom:7px"><span style="width:26px;text-align:center">'+(i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1))+'</span>'+avHtml(s.name,28)+'<span style="flex:1;font-size:14px;font-weight:600">'+s.name+'</span><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:14px;color:#F97316">'+(s.score||0).toLocaleString()+' pts</span></div>';}).join("")+'</div>';
   });
 }
 
-// ── STUDENT JOIN ──────────────────────────────────────────────
+// ── STUDENT JOIN ───────────────────────────────
 function renderJoin(){
-  return '<div style="max-width:380px;margin:44px auto" class="fu">'+
-    '<div style="text-align:center;margin-bottom:28px">'+
-    '<div style="font-size:44px;margin-bottom:12px">🏗️</div>'+
-    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:34px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px">TECNI<span style="color:#F97316">QUIZ</span></div>'+
-    '<div style="font-size:11px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:2px">E.T. Nº1 · CONSTRUCCIÓN</div></div>'+
+  return '<div style="max-width:380px;margin:40px auto" class="fu">'+
+    '<div style="text-align:center;margin-bottom:24px"><div style="font-size:44px;margin-bottom:10px">🏗️</div>'+
+    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:2px">TECNI<span style="color:#F97316">QUIZ</span></div>'+
+    '<div style="font-size:10px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:1.5px">EET N°23 · MMO · FEDERAL</div></div>'+
     '<div class="card" style="border-color:#F9731640"><div class="col" style="gap:15px">'+
-    '<div><label class="field-label">Tu nombre completo</label>'+
-    '<input type="text" id="st-name" placeholder="Ej: Juan García" value="'+S.stName+'" onkeydown="if(event.key===\'Enter\')studentJoin()"></div>'+
-    '<div><label class="field-label">Código de sala</label>'+
-    '<input type="text" id="st-code" placeholder="ABC-123" maxlength="10" '+
-    'style="font-family:\'JetBrains Mono\',monospace;font-size:24px;font-weight:700;color:#F97316;text-align:center;letter-spacing:4px;border-color:#F9731650" '+
-    'oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,\'\')" onkeydown="if(event.key===\'Enter\')studentJoin()">'+
-    '<div id="st-err" style="font-size:12px;color:#EF4444;margin-top:5px;display:none"></div></div>'+
-    '<button class="btn btn-primary btn-full" onclick="studentJoin()">Ingresar a la sala →</button>'+
+    '<div><label class="field-label">Tu nombre completo</label><input type="text" id="st-name" placeholder="Ej: Juan García" value="'+S.stName+'" onkeydown="if(event.key===\'Enter\')studentJoin()"></div>'+
+    '<div><label class="field-label">Código de sala</label><input type="text" id="st-code" placeholder="ABC-123" maxlength="10" style="font-family:\'JetBrains Mono\',monospace;font-size:24px;font-weight:700;color:#F97316;text-align:center;letter-spacing:4px;border-color:#F9731650" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,\'\')" onkeydown="if(event.key===\'Enter\')studentJoin()"><div id="st-err" style="font-size:12px;color:#EF4444;margin-top:5px;display:none"></div></div>'+
+    '<button class="btn btn-primary btn-full" onclick="studentJoin()">Ingresar →</button>'+
     '<div style="text-align:center"><button onclick="S.mode=null;render()" style="background:none;border:none;color:#374151;font-size:12px;cursor:pointer;text-decoration:underline">Soy docente</button></div>'+
     '</div></div></div>';
 }
 
 function studentJoin(){
-  var name=g("st-name").value.trim();
-  var code=g("st-code").value.trim().toUpperCase();
+  var name=g("st-name").value.trim();var code=g("st-code").value.trim().toUpperCase();
   var errEl=g("st-err");errEl.style.display="none";
   if(!name){errEl.textContent="Ingresá tu nombre completo.";errEl.style.display="block";return;}
   if(!code||code.length<4){errEl.textContent="Código demasiado corto.";errEl.style.display="block";return;}
@@ -528,24 +734,21 @@ function studentJoin(){
     if(room.phase==="ended"){errEl.textContent="Esta sala ya terminó.";errEl.style.display="block";return;}
     S.stName=name;S.stRoom=room;S.stAnswers={};S.stScore=0;
     db.ref("rooms/"+code+"/students/"+name).set({name:name,score:0,online:true,joinedAt:Date.now()});
-    S.stScreen=room.phase==="running"?"quiz":"lobby";
-    render();toast("¡Bienvenido "+name+"!");
+    S.stScreen=room.phase==="running"?"quiz":"lobby";render();toast("¡Bienvenido "+name+"!");
   });
 }
 
-// ── STUDENT LOBBY ─────────────────────────────────────────────
+// ── STUDENT LOBBY ──────────────────────────────
 function renderLobby(){
-  var d=S.stData||{students:{},phase:"lobby"};
+  var d=S.stData||{students:{}};
   var students=Object.values(d.students||{}).filter(function(s){return s.online;});
-  return '<div style="max-width:520px;margin:36px auto" class="fu">'+
-    '<div class="card" style="text-align:center;padding:40px 28px;margin-bottom:14px;border-color:#F9731640">'+
-    '<div style="display:inline-flex;align-items:center;gap:8px;background:#11141C;border:1px solid #1E2333;border-radius:20px;padding:5px 14px;margin-bottom:18px">'+
-    '<span class="live-dot"></span><span style="font-size:12px;color:#4B5563">'+students.length+' conectado'+(students.length!==1?"s":"")+'</span></div>'+
+  return '<div style="max-width:520px;margin:32px auto" class="fu">'+
+    '<div class="card" style="text-align:center;padding:36px 24px;margin-bottom:14px;border-color:#F9731640">'+
+    '<div style="display:inline-flex;align-items:center;gap:8px;background:#11141C;border:1px solid #1E2333;border-radius:20px;padding:5px 14px;margin-bottom:16px"><span class="live-dot"></span><span style="font-size:12px;color:#4B5563">'+students.length+' conectado'+(students.length!==1?"s":"")+'</span></div>'+
     '<h2 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px">'+S.stRoom.name+'</h2>'+
-    '<p style="color:#4B5563;font-size:14px;margin-bottom:24px">Esperando que el docente inicie el quiz…</p>'+
-    '<div style="font-size:52px;animation:blink 2s ease infinite">🏗️</div>'+
-    '<div style="display:flex;gap:24px;justify-content:center;color:#374151;font-size:13px;margin-top:18px">'+
-    '<span>❓ '+(S.stRoom.questions||[]).length+' preguntas</span><span>⏱ 20 seg c/u</span></div></div>'+
+    '<p style="color:#4B5563;font-size:14px;margin-bottom:22px">Esperando que el docente inicie el quiz…</p>'+
+    '<div style="font-size:48px;animation:blink 2s ease infinite">🏗️</div>'+
+    '<div style="display:flex;gap:20px;justify-content:center;color:#374151;font-size:13px;margin-top:16px"><span>❓ '+(S.stRoom.questions||[]).length+' preguntas</span><span>⏱ 20 seg c/u</span></div></div>'+
     '<div class="card"><div class="card-title">👥 Alumnos conectados ahora</div>'+
     '<div id="lobby-students" style="display:flex;flex-wrap:wrap;gap:8px">'+
     (students.length===0?'<span style="color:#374151;font-size:13px">Sos el primero en entrar 🎉</span>':
@@ -553,18 +756,15 @@ function renderLobby(){
     '</div></div></div>';
 }
 
-// ── STUDENT QUIZ ──────────────────────────────────────────────
+// ── STUDENT QUIZ ───────────────────────────────
 function renderQuiz(){
-  var d=S.stData||{};
-  var qi=d.currentQ||0;
+  var d=S.stData||{};var qi=d.currentQ||0;
   var qs=(S.stRoom.questions||[]).map(function(id){return QDB.find(function(q){return q.id===id;});}).filter(Boolean);
-  var q=qs[qi];
-  if(!q) return '<div style="text-align:center;padding:60px 0;color:#374151">Cargando…</div>';
-  var myAns=S.stAnswers[qi];
-  var answered=myAns!==undefined;
-  var secs=S.timerSecs;
-  var R=44,CIRC=2*Math.PI*R;
+  var q=qs[qi];if(!q) return '<div style="text-align:center;padding:60px 0;color:#374151">Cargando…</div>';
+  var myAns=S.stAnswers[qi];var answered=myAns!==undefined;
+  var secs=S.timerSecs;var R=44,CIRC=2*Math.PI*R;
   var col=secs<=5?"#EF4444":secs<=10?"#F59E0B":"#10B981";
+  var tc=topicColor(q.topic);
   var feedback="";
   if(answered){
     feedback='<div class="fu" style="margin-top:14px;padding:14px 18px;border-radius:10px;background:'+(myAns===q.ans?"#10B98114":"#EF444414")+';border:1px solid '+(myAns===q.ans?"#10B98140":"#EF444440")+';display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
@@ -574,51 +774,36 @@ function renderQuiz(){
       '<div style="font-size:12px;color:#374151">Esperando al docente…</div></div>';
   }
   return '<div style="max-width:680px;margin:0 auto" class="fu">'+
-    '<div class="pbar" style="margin-bottom:14px"><div class="pbar-fill" style="width:'+((qi+1)/qs.length*100)+'%"></div></div>'+
-    '<div class="row mb14" style="flex-wrap:wrap;gap:8px">'+
-    '<span class="tag tag-ore" style="font-size:10px">'+(qi+1)+'/'+qs.length+'</span>'+
-    '<span class="tag tag-sky" style="font-size:10px">'+q.topic+'</span>'+
-    '<span class="sp"></span>'+
-    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;color:#F97316;background:#F9731618;padding:4px 12px;border-radius:8px">⭐ '+S.stScore.toLocaleString()+'</span></div>'+
+    '<div class="pbar" style="margin-bottom:12px"><div class="pbar-fill" style="width:'+((qi+1)/qs.length*100)+'%"></div></div>'+
+    '<div class="row mb12" style="flex-wrap:wrap;gap:7px"><span class="tag" style="font-size:10px;background:'+tc+'18;color:'+tc+';border:1px solid '+tc+'35">'+(qi+1)+'/'+qs.length+'</span><span class="tag" style="font-size:10px;background:'+tc+'18;color:'+tc+';border:1px solid '+tc+'35">'+q.topic+'</span><span class="sp"></span><span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;color:#F97316;background:#F9731618;padding:4px 12px;border-radius:8px">⭐ '+S.stScore.toLocaleString()+'</span></div>'+
     '<div style="display:flex;gap:18px;align-items:flex-start">'+
     '<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:4px">'+
-    '<div style="position:relative;width:104px;height:104px">'+
-    '<svg width="104" height="104" style="transform:rotate(-90deg)">'+
-    '<circle cx="52" cy="52" r="'+R+'" fill="none" stroke="#1E2333" stroke-width="6"/>'+
-    '<circle id="tc" cx="52" cy="52" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="6" stroke-linecap="round" stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+(CIRC*(1-Math.max(0,secs/20))).toFixed(1)+'" style="transition:stroke-dashoffset .9s linear,stroke .4s"/>'+
-    '</svg>'+
-    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
-    '<span id="tn" style="font-family:\'Rajdhani\',sans-serif;font-size:28px;font-weight:700;color:'+col+';line-height:1">'+secs+'</span>'+
-    '<span style="font-size:10px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:1px">SEG</span></div></div>'+
+    '<div style="position:relative;width:104px;height:104px"><svg width="104" height="104" style="transform:rotate(-90deg)"><circle cx="52" cy="52" r="'+R+'" fill="none" stroke="#1E2333" stroke-width="6"/><circle id="tc" cx="52" cy="52" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="6" stroke-linecap="round" stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+(CIRC*(1-Math.max(0,secs/20))).toFixed(1)+'" style="transition:stroke-dashoffset .9s linear,stroke .4s"/></svg>'+
+    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span id="tn" style="font-family:\'Rajdhani\',sans-serif;font-size:28px;font-weight:700;color:'+col+';line-height:1">'+secs+'</span><span style="font-size:10px;color:#374151;font-family:\'JetBrains Mono\',monospace;letter-spacing:1px">SEG</span></div></div>'+
     (answered?'<div style="font-size:11px;color:#374151;text-align:center;margin-top:8px;line-height:1.5">Esperando<br>docente…</div>':"")+
     '</div>'+
-    '<div style="flex:1;min-width:0">'+
-    '<div class="card" style="margin-bottom:12px"><div style="font-family:\'Rajdhani\',sans-serif;font-size:19px;font-weight:600;line-height:1.45">'+q.text+'</div></div>'+
+    '<div style="flex:1;min-width:0"><div class="card" style="margin-bottom:12px"><div style="font-family:\'Rajdhani\',sans-serif;font-size:19px;font-weight:600;line-height:1.45">'+q.text+'</div></div>'+
     q.opts.map(function(opt,i){
-      var cls="opt-btn";
-      if(answered){if(i===q.ans)cls+=" reveal";if(i===myAns)cls+=myAns===q.ans?" correct":" wrong";}
+      var cls="opt-btn";if(answered){if(i===q.ans)cls+=" reveal";if(i===myAns)cls+=myAns===q.ans?" correct":" wrong";}
       return '<button class="'+cls+'" onclick="studentPick('+i+')" '+(answered?"disabled":"")+'>'+
         '<span class="opt-letter" style="background:'+OC[i]+'20;color:'+(answered?(i===q.ans?"#10B981":i===myAns?"#EF4444":"#374151"):OC[i])+';border:1.5px solid '+OC[i]+'40">'+String.fromCharCode(65+i)+'</span>'+
         '<span>'+opt+'</span></button>';
-    }).join("")+
-    feedback+'</div></div></div>';
+    }).join("")+feedback+'</div></div></div>';
 }
 
 function studentPick(i){
   var d=S.stData||{};var qi=d.currentQ||0;
-  if(S.stAnswers[qi]!==undefined)return;
-  S.stAnswers[qi]=i;
+  if(S.stAnswers[qi]!==undefined)return;S.stAnswers[qi]=i;
   var qs=(S.stRoom.questions||[]).map(function(id){return QDB.find(function(q){return q.id===id;});}).filter(Boolean);
   var q=qs[qi];if(!q)return;
-  var correct=i===q.ans;
-  var pts=correct?Math.max(100,Math.round((S.timerSecs/20)*800)+200):0;
+  var correct=i===q.ans;var pts=correct?Math.max(100,Math.round((S.timerSecs/20)*800)+200):0;
   if(correct)S.stScore+=pts;
   db.ref("rooms/"+S.stRoom.code+"/students/"+S.stName).update({score:S.stScore});
   db.ref("rooms/"+S.stRoom.code+"/answers/"+S.stName).update({[qi]:i});
   h("main",renderQuiz());
 }
 
-// ── STUDENT END ───────────────────────────────────────────────
+// ── STUDENT END ────────────────────────────────
 function renderEnd(){
   var d=S.stData||{};
   var qs=(S.stRoom.questions||[]).map(function(id){return QDB.find(function(q){return q.id===id;});}).filter(Boolean);
@@ -628,51 +813,31 @@ function renderEnd(){
   var rank=all.findIndex(function(s){return s.name===S.stName;})+1;
   var myScore=(d.students&&d.students[S.stName]&&d.students[S.stName].score)||S.stScore||0;
   return '<div style="max-width:500px;margin:28px auto" class="pop">'+
-    '<div style="text-align:center;margin-bottom:22px">'+
-    '<div style="font-size:56px;margin-bottom:10px">'+(rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":pct>=70?"🏆":"💪")+'</div>'+
+    '<div style="text-align:center;margin-bottom:22px"><div style="font-size:56px;margin-bottom:10px">'+(rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":pct>=70?"🏆":"💪")+'</div>'+
     '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px">'+(pct>=70?"¡EXCELENTE TRABAJO!":pct>=50?"¡BUEN INTENTO!":"¡A SEGUIR PRACTICANDO!")+'</h1>'+
     '<div style="color:#4B5563">'+S.stName+'</div></div>'+
-    '<div class="stat-grid" style="margin-bottom:14px">'+
-    '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+myScore.toLocaleString()+'</div><div class="stat-lbl">Puntaje</div></div>'+
-    '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+correct+'/'+qs.length+'</div><div class="stat-lbl">Correctas</div></div>'+
-    '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">#'+(rank||"—")+'</div><div class="stat-lbl">Posición</div></div></div>'+
-    '<div class="card" style="margin-bottom:14px"><div class="row" style="margin-bottom:8px;font-size:13px"><span>Precisión</span><span class="sp"></span><span style="font-weight:700;color:'+(pct>=70?"#10B981":pct>=50?"#F59E0B":"#EF4444")+'">'+pct+'%</span></div>'+
-    '<div class="pbar" style="height:7px"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=70?"#10B981":pct>=50?"#F59E0B":"#EF4444")+'"></div></div></div>'+
+    '<div class="stat-grid" style="margin-bottom:14px"><div class="stat-card"><div class="stat-val" style="color:#F97316">'+myScore.toLocaleString()+'</div><div class="stat-lbl">Puntaje</div></div><div class="stat-card"><div class="stat-val" style="color:#10B981">'+correct+'/'+qs.length+'</div><div class="stat-lbl">Correctas</div></div><div class="stat-card"><div class="stat-val" style="color:#F59E0B">#'+(rank||"—")+'</div><div class="stat-lbl">Posición</div></div></div>'+
+    '<div class="card" style="margin-bottom:14px"><div class="row" style="margin-bottom:8px;font-size:13px"><span>Precisión</span><span class="sp"></span><span style="font-weight:700;color:'+(pct>=70?"#10B981":pct>=50?"#F59E0B":"#EF4444")+'">'+pct+'%</span></div><div class="pbar" style="height:7px"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=70?"#10B981":pct>=50?"#F59E0B":"#EF4444")+'"></div></div></div>'+
     (all.length>1?'<div class="card" style="margin-bottom:16px"><div class="card-title">Clasificación final</div>'+
-    all.map(function(s,i){return '<div class="row sr" style="padding:9px 13px;border-radius:8px;margin-bottom:6px;background:'+(s.name===S.stName?"#F9731612":"#11141C")+';border:1px solid '+(s.name===S.stName?"#F9731640":"#1E2333")+'">'+
-      '<span style="width:24px;text-align:center">'+(i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1))+'</span>'+avHtml(s.name,26)+
-      '<span style="flex:1;font-size:13px;font-weight:'+(s.name===S.stName?"700":"500")+';color:'+(s.name===S.stName?"#F97316":"#F0EDE8")+'">'+s.name+'</span>'+
-      '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;color:'+(s.name===S.stName?"#F97316":"#4B5563")+'">'+(s.score||0).toLocaleString()+'</span></div>';}).join("")+'</div>':"")+'<div style="display:flex;gap:10px"><button class="btn btn-primary btn-full" onclick="leaveStudent()">Entrar a otra sala</button><button class="btn btn-full" onclick="S.mode=null;render()">Inicio</button></div></div>';
+    all.map(function(s,i){return '<div class="row sr" style="padding:9px 13px;border-radius:8px;margin-bottom:6px;background:'+(s.name===S.stName?"#F9731612":"#11141C")+';border:1px solid '+(s.name===S.stName?"#F9731640":"#1E2333")+'"><span style="width:24px;text-align:center">'+(i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1))+'</span>'+avHtml(s.name,26)+'<span style="flex:1;font-size:13px;font-weight:'+(s.name===S.stName?"700":"500")+';color:'+(s.name===S.stName?"#F97316":"#F0EDE8")+'">'+s.name+'</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;color:'+(s.name===S.stName?"#F97316":"#4B5563")+'">'+(s.score||0).toLocaleString()+'</span></div>';}).join("")+'</div>':"")+'<div style="display:flex;gap:10px"><button class="btn btn-primary btn-full" onclick="leaveStudent()">Jugar de nuevo</button><button class="btn btn-full" onclick="S.mode=null;render()">Inicio</button></div></div>';
 }
 
 function leaveStudent(){
   if(S.stListener){db.ref("rooms/"+S.stRoom.code).off("value",S.stListener);S.stListener=null;}
-  if(S.stRoom&&S.stName) db.ref("rooms/"+S.stRoom.code+"/students/"+S.stName).update({online:false}).catch(function(){});
+  if(S.stRoom&&S.stName)db.ref("rooms/"+S.stRoom.code+"/students/"+S.stName).update({online:false}).catch(function(){});
   S.stScreen="join";S.stRoom=null;S.stName="";S.stAnswers={};S.stScore=0;S.stData=null;render();
 }
 
-// ── Student listener ──────────────────────────────────────────
+// ── STUDENT LISTENER ───────────────────────────
 function attachStudentListener(){
   if(S.stListener){db.ref("rooms/"+S.stRoom.code).off("value",S.stListener);}
   S.stListener=db.ref("rooms/"+S.stRoom.code).on("value",function(snap){
-    var data=snap.val();
-    var prevPhase=S.stData?S.stData.phase:null;
-    var prevQ=S.stData?S.stData.currentQ:-1;
+    var data=snap.val();var prevPhase=S.stData?S.stData.phase:null;var prevQ=S.stData?S.stData.currentQ:-1;
     S.stData=data;
-    if(prevPhase==="lobby"&&data&&data.phase==="running"){
-      S.stAnswers={};S.stScore=0;S.timerSecs=20;
-      S.stScreen="quiz";render();startStudentTimer();return;
-    }
-    if(data&&data.phase==="ended"&&S.stScreen!=="end"){
-      clearInterval(S.timerInterval);S.stScreen="end";render();return;
-    }
-    if(data&&data.phase==="lobby"&&prevPhase&&prevPhase!=="lobby"&&S.stScreen!=="join"){
-      clearInterval(S.timerInterval);S.stScreen="lobby";S.stAnswers={};S.stScore=0;render();return;
-    }
-    if(data&&data.currentQ!==undefined&&data.currentQ!==prevQ&&S.stScreen==="quiz"){
-      delete S.stAnswers[data.currentQ];S.timerSecs=20;
-      startStudentTimer();render();return;
-    }
+    if(prevPhase==="lobby"&&data&&data.phase==="running"){S.stAnswers={};S.stScore=0;S.timerSecs=20;S.stScreen="quiz";render();startStudentTimer();return;}
+    if(data&&data.phase==="ended"&&S.stScreen!=="end"){clearInterval(S.timerInterval);S.stScreen="end";render();return;}
+    if(data&&data.phase==="lobby"&&prevPhase&&prevPhase!=="lobby"&&S.stScreen!=="join"){clearInterval(S.timerInterval);S.stScreen="lobby";S.stAnswers={};S.stScore=0;render();return;}
+    if(data&&data.currentQ!==undefined&&data.currentQ!==prevQ&&S.stScreen==="quiz"){delete S.stAnswers[data.currentQ];S.timerSecs=20;startStudentTimer();render();return;}
     if(S.stScreen==="lobby"){
       var el=g("lobby-students");if(!el)return;
       var students=Object.values(data&&data.students?data.students:{}).filter(function(s){return s.online;});
@@ -686,18 +851,16 @@ function startStudentTimer(){
   clearInterval(S.timerInterval);
   S.timerInterval=setInterval(function(){
     S.timerSecs=Math.max(0,S.timerSecs-1);
-    var tcEl=g("tc");var tnEl=g("tn");
-    if(!tcEl){clearInterval(S.timerInterval);return;}
+    var tcEl=g("tc");var tnEl=g("tn");if(!tcEl){clearInterval(S.timerInterval);return;}
     var R=44,CIRC=2*Math.PI*R;
     var col=S.timerSecs<=5?"#EF4444":S.timerSecs<=10?"#F59E0B":"#10B981";
-    tcEl.style.stroke=col;
-    tcEl.style.strokeDashoffset=(CIRC*(1-Math.max(0,S.timerSecs/20))).toFixed(1);
+    tcEl.style.stroke=col;tcEl.style.strokeDashoffset=(CIRC*(1-Math.max(0,S.timerSecs/20))).toFixed(1);
     if(tnEl){tnEl.textContent=S.timerSecs;tnEl.style.color=col;}
     if(S.timerSecs<=0)clearInterval(S.timerInterval);
   },1000);
 }
 
-// ── Init ──────────────────────────────────────────────────────
+// ── INIT ───────────────────────────────────────
 render();
 </script>
 </body>
