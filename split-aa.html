@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Split AA — TecniQuiz | E.E.T. N°23</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100dvh;overflow-x:hidden}
+
+#splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;text-align:center}
+.logo{font-size:28px;font-weight:800;letter-spacing:-1px;color:#fff;margin-bottom:4px}
+.logo span{color:#3b82f6}
+.sub{font-size:13px;color:#64748b;margin-bottom:32px}
+.card{background:#1e2130;border:1px solid #2d3148;border-radius:16px;padding:28px 24px;max-width:360px;width:100%}
+.card h1{font-size:20px;font-weight:700;margin-bottom:8px;line-height:1.3}
+.card p{font-size:14px;color:#94a3b8;margin-bottom:20px;line-height:1.6}
+.tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.tag{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500}
+.tag.blue{background:#1e3a5f;color:#60a5fa}
+.tag.green{background:#14362a;color:#4ade80}
+.tag.purple{background:#2d1b69;color:#a78bfa}
+.btn-start{width:100%;padding:14px;border-radius:12px;border:none;background:#3b82f6;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+.btn-start:active{transform:scale(.97)}
+
+#game{display:none;flex-direction:column;min-height:100dvh}
+#game-header{background:#1e2130;border-bottom:1px solid #2d3148;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo-sm{font-size:15px;font-weight:800;color:#fff}
+.logo-sm span{color:#3b82f6}
+.stats{display:flex;gap:8px}
+.stat{background:#0f1117;border-radius:8px;padding:4px 10px;font-size:12px;color:#64748b}
+.stat b{color:#e2e8f0;font-weight:600}
+.btn-reset{background:transparent;border:1px solid #2d3148;color:#64748b;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+
+#game-body{display:flex;flex-direction:column;flex:1;padding:10px;gap:10px}
+
+/* Layout horizontal en pantallas anchas */
+@media(min-width:600px){
+  #game-body{flex-direction:row;align-items:flex-start}
+  #svg-wrap{flex:0 0 360px}
+  #right-col{flex:1;display:flex;flex-direction:column;gap:8px}
+  #words-box{min-height:360px;flex:1}
+}
+@media(max-width:599px){
+  #svg-wrap{width:100%}
+  #svg-wrap svg{width:100%;height:auto}
+  #right-col{display:flex;flex-direction:column;gap:8px}
+  #words-box{min-height:180px;height:180px}
+}
+
+#svg-wrap{background:#1e2130;border-radius:12px;border:1px solid #2d3148;overflow:hidden}
+#right-col{}
+#wlabel{font-size:11px;color:#3d4466;padding:2px 4px}
+#words-box{position:relative;background:#1e2130;border:1px solid #2d3148;border-radius:12px;overflow:hidden}
+
+.chip{position:absolute;padding:7px 12px;border-radius:8px;border:1.5px solid #2d3148;background:#252840;font-size:12px;font-weight:600;color:#e2e8f0;cursor:grab;user-select:none;touch-action:none;white-space:nowrap;z-index:20;transition:border-color .15s}
+.chip:hover{border-color:#4d5580}
+.chip.drag{cursor:grabbing;border-color:#3b82f6;color:#60a5fa;background:#1e2d47;z-index:99}
+.chip.done{background:#14362a;border-color:#166534;color:#4ade80;pointer-events:none}
+
+#fb{min-height:32px;font-size:12px;font-weight:500;color:#64748b;text-align:center;padding:6px 10px;border-radius:8px;background:#1e2130;border:1px solid #2d3148;display:flex;align-items:center;justify-content:center}
+#fb.ok{color:#4ade80;background:#14362a;border-color:#166534}
+#fb.err{color:#f87171;background:#2d1515;border-color:#7f1d1d}
+
+#win{display:none;text-align:center;padding:20px;background:#14362a;border-radius:12px;border:1px solid #166534;margin-top:4px}
+#win p{color:#4ade80;font-size:14px;font-weight:500;margin-bottom:8px}
+#win button{background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo">Tecni<span>Quiz</span></div>
+  <div class="sub">E.E.T. N°23 — Caudillos Federales — Federal, Entre Ríos</div>
+  <div class="card">
+    <h1>Componentes del Split</h1>
+    <p>Arrastrá cada nombre a su lugar en el diagrama del equipo de aire acondicionado.</p>
+    <div class="tags">
+      <span class="tag blue">Unidad 3 — AA</span>
+      <span class="tag green">10 componentes</span>
+      <span class="tag purple">Drag &amp; Drop</span>
+    </div>
+    <button class="btn-start" onclick="startGame()">Empezar actividad</button>
+  </div>
+</div>
+
+<div id="game">
+  <div id="game-header">
+    <div class="logo-sm">Tecni<span>Quiz</span></div>
+    <div class="stats">
+      <div class="stat">OK <b id="sok">0</b>/10</div>
+      <div class="stat">Intentos <b id="stry">0</b></div>
+    </div>
+    <button class="btn-reset" onclick="resetGame()">Reiniciar</button>
+  </div>
+  <div id="game-body">
+    <div id="svg-wrap">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" width="360" height="460" viewBox="0 0 360 460"></svg>
+    </div>
+    <div id="right-col">
+      <div id="wlabel">Arrastrá cada nombre a su lugar en el dibujo</div>
+      <div id="words-box"></div>
+      <div id="fb">Arrastrá un nombre sobre el círculo ? que corresponde</div>
+      <div id="win">
+        <p id="win-msg"></p>
+        <button onclick="resetGame()">Jugar de nuevo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PARTS=[
+  {id:'ui_body', label:'Carcasa unidad interior', cx:230,cy:95, r:22},
+  {id:'evap',    label:'Evaporador',              cx:118,cy:91, r:20},
+  {id:'vent_i',  label:'Ventilador interior',     cx:274,cy:92, r:18},
+  {id:'flap',    label:'Aleta / flap',            cx:200,cy:163,r:18},
+  {id:'filtro',  label:'Filtro de aire',          cx:52, cy:97, r:14},
+  {id:'tub_gas', label:'Línea de gas',            cx:167,cy:230,r:16},
+  {id:'tub_liq', label:'Línea de líquido',        cx:197,cy:230,r:16},
+  {id:'drenaje', label:'Desagüe condensado',      cx:307,cy:210,r:15},
+  {id:'comp',    label:'Compresor',               cx:143,cy:355,r:22},
+  {id:'cond',    label:'Condensador',             cx:259,cy:385,r:20},
+  {id:'vent_e',  label:'Ventilador exterior',     cx:259,cy:345,r:20},
+];
+
+const SVG_BODY=`
+<defs>
+  <linearGradient id="g-ui" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#dde3ec"/><stop offset="100%" stop-color="#bcc5d3"/>
+  </linearGradient>
+  <linearGradient id="g-ue" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c8cdd6"/><stop offset="100%" stop-color="#a8adb8"/>
+  </linearGradient>
+  <linearGradient id="g-panel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#e8ecf2"/><stop offset="100%" stop-color="#d0d6e0"/>
+  </linearGradient>
+  <linearGradient id="g-comp" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#6b7280"/><stop offset="100%" stop-color="#374151"/>
+  </linearGradient>
+  <marker id="arr-g" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+    <path d="M0 0 L5 2.5 L0 5" fill="none" stroke="#94a3b8" stroke-width="1"/>
+  </marker>
+  <marker id="arr-b" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+    <path d="M0 0 L5 2.5 L0 5" fill="none" stroke="#60a5fa" stroke-width="1"/>
+  </marker>
+  <marker id="arr-r" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+    <path d="M0 0 L5 2.5 L0 5" fill="none" stroke="#f87171" stroke-width="1"/>
+  </marker>
+</defs>
+
+<!-- UNIDAD INTERIOR sombra -->
+<rect x="52" y="48" width="300" height="128" rx="18" fill="#9aa3b0" opacity="0.25"/>
+<!-- UNIDAD INTERIOR cuerpo -->
+<rect x="50" y="44" width="300" height="126" rx="16" fill="url(#g-ui)" stroke="#8a96a8" stroke-width="1.5"/>
+<!-- Panel frontal -->
+<rect x="60" y="52" width="280" height="80" rx="10" fill="url(#g-panel)" stroke="#aab2be" stroke-width="0.8"/>
+<!-- Filtro lateral izquierdo -->
+<rect x="46" y="56" width="11" height="102" rx="3" fill="#d1d9e0" stroke="#9aa3b0" stroke-width="0.8"/>
+<line x1="47" y1="64" x2="56" y2="64" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="76" x2="56" y2="76" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="88" x2="56" y2="88" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="100" x2="56" y2="100" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="112" x2="56" y2="112" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="124" x2="56" y2="124" stroke="#8a96a8" stroke-width="0.6"/>
+<line x1="47" y1="136" x2="56" y2="136" stroke="#8a96a8" stroke-width="0.6"/>
+<!-- Evaporador (rejilla) -->
+<rect x="68" y="60" width="140" height="64" rx="6" fill="#c8d0da" stroke="#9aa3b0" stroke-width="0.6"/>
+<line x1="72" y1="66" x2="204" y2="66" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="74" x2="204" y2="74" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="82" x2="204" y2="82" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="90" x2="204" y2="90" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="98" x2="204" y2="98" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="106" x2="204" y2="106" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="114" x2="204" y2="114" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="72" y1="122" x2="204" y2="122" stroke="#a8b0bc" stroke-width="0.5"/>
+<line x1="90"  y1="62" x2="90"  y2="122" stroke="#a8b0bc" stroke-width="0.4" opacity="0.5"/>
+<line x1="120" y1="62" x2="120" y2="122" stroke="#a8b0bc" stroke-width="0.4" opacity="0.5"/>
+<line x1="150" y1="62" x2="150" y2="122" stroke="#a8b0bc" stroke-width="0.4" opacity="0.5"/>
+<line x1="180" y1="62" x2="180" y2="122" stroke="#a8b0bc" stroke-width="0.4" opacity="0.5"/>
+<!-- Ventilador interior -->
+<rect x="218" y="58" width="112" height="68" rx="6" fill="#bcc5d3" stroke="#9aa3b0" stroke-width="0.6"/>
+<circle cx="274" cy="92" r="26" fill="none" stroke="#8a96a8" stroke-width="0.8"/>
+<circle cx="274" cy="92" r="8"  fill="#9aa3b0"/>
+<line x1="274" y1="83" x2="274" y2="100" stroke="#707a88" stroke-width="2" stroke-linecap="round"/>
+<line x1="265" y1="87" x2="283" y2="97"  stroke="#707a88" stroke-width="2" stroke-linecap="round"/>
+<line x1="265" y1="97" x2="283" y2="87"  stroke="#707a88" stroke-width="2" stroke-linecap="round"/>
+<line x1="266" y1="92" x2="282" y2="92"  stroke="#707a88" stroke-width="2" stroke-linecap="round"/>
+<line x1="268" y1="83" x2="280" y2="101" stroke="#707a88" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<line x1="268" y1="101" x2="280" y2="83" stroke="#707a88" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<!-- LED -->
+<circle cx="332" cy="58" r="5" fill="#22c55e" stroke="#16a34a" stroke-width="0.8"/>
+<circle cx="318" cy="58" r="3" fill="#94a3b8" stroke="#64748b" stroke-width="0.5"/>
+<!-- Display temp -->
+<rect x="102" y="132" width="56" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="0.6"/>
+<text x="130" y="142" font-family="monospace" font-size="8" fill="#60a5fa" text-anchor="middle">24°C</text>
+<!-- Flap -->
+<path d="M58 168 Q200 180 342 168" fill="none" stroke="#8a96a8" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M62 172 Q200 185 338 172" fill="none" stroke="#8a96a8" stroke-width="1.5" stroke-linecap="round"/>
+<!-- Label UI -->
+<rect x="130" y="33" width="140" height="13" rx="3" fill="#374151" opacity="0.75"/>
+<text x="200" y="43" font-family="sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle" font-weight="bold">UNIDAD INTERIOR</text>
+
+<!-- TUBERIA GAS (roja) -->
+<rect x="160" y="185" width="14" height="95" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+<line x1="167" y1="188" x2="167" y2="277" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+<path d="M167 185 Q167 175 175 172 Q184 169 190 173" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+<path d="M167 280 Q167 300 155 312 Q143 323 143 336" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+<!-- TUBERIA LIQUIDO (azul) -->
+<rect x="192" y="185" width="10" height="95" rx="5" fill="#93c5fd" stroke="#3b82f6" stroke-width="1.5"/>
+<line x1="197" y1="188" x2="197" y2="277" stroke="#2563eb" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.5"/>
+<path d="M197 185 Q197 176 205 173 Q213 170 218 174" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+<path d="M197 280 Q197 300 202 315 Q208 332 212 342" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+<!-- Abrazaderas -->
+<rect x="156" y="222" width="50" height="7" rx="3.5" fill="#6b7280" stroke="#4b5563" stroke-width="0.8"/>
+<rect x="156" y="252" width="50" height="7" rx="3.5" fill="#6b7280" stroke="#4b5563" stroke-width="0.8"/>
+<!-- DESAGUE condensado -->
+<rect x="303" y="178" width="8" height="78" rx="4" fill="#bfdbfe" stroke="#93c5fd" stroke-width="1"/>
+<ellipse cx="307" cy="260" rx="4" ry="5" fill="#60a5fa"/>
+
+<!-- UNIDAD EXTERIOR sombra -->
+<rect x="92" y="302" width="250" height="148" rx="14" fill="#8a96a8" opacity="0.2"/>
+<!-- UNIDAD EXTERIOR cuerpo -->
+<rect x="90" y="298" width="248" height="146" rx="12" fill="url(#g-ue)" stroke="#7a8494" stroke-width="2"/>
+<!-- Panel izquierdo compresor -->
+<rect x="98" y="307" width="90" height="130" rx="8" fill="#b4bac6" stroke="#8a96a8" stroke-width="0.8"/>
+<!-- Compresor cilíndrico -->
+<rect x="108" y="320" width="70" height="80" rx="35" fill="url(#g-comp)" stroke="#4b5563" stroke-width="1.5"/>
+<rect x="118" y="332" width="50" height="56" rx="25" fill="#4b5563" stroke="#374151" stroke-width="1"/>
+<text x="143" y="364" font-family="sans-serif" font-size="7" fill="#9ca3af" text-anchor="middle">COMP.</text>
+<!-- Cables compresor -->
+<line x1="128" y1="400" x2="128" y2="408" stroke="#1f2937" stroke-width="2" stroke-linecap="round"/>
+<line x1="143" y1="402" x2="143" y2="408" stroke="#1f2937" stroke-width="2" stroke-linecap="round"/>
+<line x1="158" y1="400" x2="158" y2="408" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+<!-- Separador -->
+<line x1="192" y1="307" x2="192" y2="434" stroke="#8a96a8" stroke-width="1" opacity="0.5"/>
+<!-- Panel derecho -->
+<rect x="196" y="307" width="134" height="130" rx="8" fill="#b8bfcb" stroke="#8a96a8" stroke-width="0.8"/>
+<!-- Serpentín condensador -->
+<path d="M200 316 Q230 312 260 316 Q290 320 322 316" fill="none" stroke="#e87c6a" stroke-width="1.5" opacity="0.8"/>
+<path d="M200 327 Q230 323 260 327 Q290 331 322 327" fill="none" stroke="#e87c6a" stroke-width="1.5" opacity="0.8"/>
+<path d="M200 338 Q230 334 260 338 Q290 342 322 338" fill="none" stroke="#e87c6a" stroke-width="1.5" opacity="0.8"/>
+<path d="M200 349 Q230 345 260 349 Q290 353 322 349" fill="none" stroke="#e87c6a" stroke-width="1.5" opacity="0.8"/>
+<!-- Ventilador exterior -->
+<circle cx="259" cy="358" r="48" fill="#a8afbc" stroke="#7a8494" stroke-width="1.5"/>
+<circle cx="259" cy="358" r="40" fill="none" stroke="#8a96a8" stroke-width="0.6" stroke-dasharray="4 2"/>
+<circle cx="259" cy="358" r="10" fill="#6b7280" stroke="#4b5563" stroke-width="1.2"/>
+<path d="M259 348 Q275 348 274 358 Q273 368 259 368 Q245 368 244 358 Q243 348 259 348" fill="#7a8494" stroke="#6b7280" stroke-width="0.5"/>
+<path d="M269 341 Q279 351 274 358 Q269 365 259 366 Q265 352 269 341" fill="#7a8494" stroke="#6b7280" stroke-width="0.5"/>
+<path d="M249 341 Q239 351 244 358 Q249 365 259 366 Q253 352 249 341" fill="#7a8494" stroke="#6b7280" stroke-width="0.5"/>
+<path d="M276 365 Q276 376 266 376 Q256 376 252 368 Q265 368 276 365" fill="#7a8494" stroke="#6b7280" stroke-width="0.5"/>
+<path d="M242 365 Q242 376 252 376 Q262 376 266 368 Q253 368 242 365" fill="#7a8494" stroke="#6b7280" stroke-width="0.5"/>
+<!-- Rejilla protectora -->
+<circle cx="259" cy="358" r="48" fill="none" stroke="#6b7280" stroke-width="1.5"/>
+<line x1="211" y1="336" x2="307" y2="336" stroke="#6b7280" stroke-width="0.7" opacity="0.5"/>
+<line x1="211" y1="358" x2="307" y2="358" stroke="#6b7280" stroke-width="0.7" opacity="0.5"/>
+<line x1="211" y1="380" x2="307" y2="380" stroke="#6b7280" stroke-width="0.7" opacity="0.5"/>
+<line x1="259" y1="310" x2="259" y2="406" stroke="#6b7280" stroke-width="0.7" opacity="0.5"/>
+<line x1="237" y1="312" x2="237" y2="404" stroke="#6b7280" stroke-width="0.5" opacity="0.3"/>
+<line x1="281" y1="312" x2="281" y2="404" stroke="#6b7280" stroke-width="0.5" opacity="0.3"/>
+<!-- Label UE -->
+<rect x="128" y="435" width="150" height="13" rx="3" fill="#374151" opacity="0.75"/>
+<text x="203" y="445" font-family="sans-serif" font-size="7.5" fill="#e2e8f0" text-anchor="middle" font-weight="bold">UNIDAD EXTERIOR</text>
+
+<!-- Flechas aire UI entrada -->
+<line x1="100" y1="38" x2="100" y2="46" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr-g)" opacity="0.6"/>
+<line x1="200" y1="38" x2="200" y2="46" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr-g)" opacity="0.6"/>
+<line x1="300" y1="38" x2="300" y2="46" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr-g)" opacity="0.6"/>
+<!-- Flechas aire UI salida frío -->
+<line x1="100" y1="190" x2="100" y2="200" stroke="#60a5fa" stroke-width="1.2" marker-end="url(#arr-b)" opacity="0.7"/>
+<line x1="200" y1="190" x2="200" y2="200" stroke="#60a5fa" stroke-width="1.2" marker-end="url(#arr-b)" opacity="0.7"/>
+<line x1="300" y1="190" x2="300" y2="200" stroke="#60a5fa" stroke-width="1.2" marker-end="url(#arr-b)" opacity="0.7"/>
+<!-- Flechas calor UE -->
+<line x1="220" y1="294" x2="220" y2="286" stroke="#f87171" stroke-width="1.2" marker-end="url(#arr-r)" opacity="0.6"/>
+<line x1="259" y1="294" x2="259" y2="286" stroke="#f87171" stroke-width="1.2" marker-end="url(#arr-r)" opacity="0.6"/>
+<line x1="298" y1="294" x2="298" y2="286" stroke="#f87171" stroke-width="1.2" marker-end="url(#arr-r)" opacity="0.6"/>
+`;
+
+let solved={}, attempts=0, dragging=null, dox=0, doy=0;
+
+function buildSVG(){
+  const svg=document.getElementById('svg');
+  svg.innerHTML=SVG_BODY;
+  drawZones();
+}
+
+function ns(tag){ return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+
+function drawZones(){
+  document.querySelectorAll('.zdot').forEach(e=>e.remove());
+  const svg=document.getElementById('svg');
+  PARTS.forEach(p=>{
+    const g=ns('g'); g.classList.add('zdot');
+    if(!solved[p.id]){
+      const c=ns('circle');
+      c.setAttribute('cx',p.cx); c.setAttribute('cy',p.cy); c.setAttribute('r',p.r);
+      c.setAttribute('fill','rgba(99,102,241,0.18)');
+      c.setAttribute('stroke','#6366f1'); c.setAttribute('stroke-width','1.8');
+      c.setAttribute('stroke-dasharray','5 3');
+      const t=ns('text');
+      t.setAttribute('x',p.cx); t.setAttribute('y',p.cy+4);
+      t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-family','sans-serif'); t.setAttribute('font-size','12');
+      t.setAttribute('font-weight','bold'); t.setAttribute('fill','#818cf8');
+      t.textContent='?';
+      g.appendChild(c); g.appendChild(t);
+    } else {
+      const c=ns('circle');
+      c.setAttribute('cx',p.cx); c.setAttribute('cy',p.cy); c.setAttribute('r',p.r);
+      c.setAttribute('fill','rgba(34,197,94,0.22)');
+      c.setAttribute('stroke','#22c55e'); c.setAttribute('stroke-width','2');
+      g.appendChild(c);
+      const words=p.label.split(' ');
+      const lines=words.length<=2?[p.label]:[words.slice(0,2).join(' '),words.slice(2).join(' ')];
+      lines.forEach((line,i)=>{
+        const t=ns('text');
+        const yOff=lines.length===1?4:(i===0?-2:10);
+        t.setAttribute('x',p.cx); t.setAttribute('y',p.cy+yOff);
+        t.setAttribute('text-anchor','middle');
+        t.setAttribute('font-family','sans-serif'); t.setAttribute('font-size','9');
+        t.setAttribute('font-weight','bold'); t.setAttribute('fill','#15803d');
+        t.textContent=line;
+        g.appendChild(t);
+      });
+    }
+    svg.appendChild(g);
+  });
+}
+
+function makeChips(){
+  const box=document.getElementById('words-box');
+  box.querySelectorAll('.chip').forEach(e=>e.remove());
+  const unsolved=PARTS.filter(p=>!solved[p.id]).sort(()=>Math.random()-.5);
+  const bw=box.offsetWidth||200, bh=box.offsetHeight||340;
+  const placed=[];
+  unsolved.forEach(p=>{
+    const el=document.createElement('div');
+    el.className='chip'; el.dataset.id=p.id;
+    el.textContent=p.label;
+    const cw=Math.min(p.label.length*7.8+24, bw-12), ch=32;
+    let lx=6, ly=24, tries=0;
+    do{
+      lx=6+Math.random()*Math.max(4,bw-cw-12);
+      ly=24+Math.random()*Math.max(0,bh-ch-30);
+      tries++;
+    } while(tries<40&&placed.some(r=>lx<r.x+r.w+4&&lx+cw>r.x-4&&ly<r.y+r.h+4&&ly+ch>r.y-4));
+    placed.push({x:lx,y:ly,w:cw,h:ch});
+    el.style.left=lx+'px'; el.style.top=ly+'px';
+    el.addEventListener('mousedown',sd);
+    el.addEventListener('touchstart',sdt,{passive:false});
+    box.appendChild(el);
+  });
+}
+
+function sd(e){
+  const el=e.currentTarget; dragging=el;
+  const r=el.getBoundingClientRect();
+  dox=e.clientX-r.left; doy=e.clientY-r.top;
+  el.classList.add('drag'); e.preventDefault();
+}
+function sdt(e){
+  const el=e.currentTarget; dragging=el;
+  const t=e.touches[0], r=el.getBoundingClientRect();
+  dox=t.clientX-r.left; doy=t.clientY-r.top;
+  el.classList.add('drag'); e.preventDefault();
+}
+document.addEventListener('mousemove', e=>{ if(dragging) mv(e.clientX,e.clientY); });
+document.addEventListener('touchmove', e=>{ if(dragging){ mv(e.touches[0].clientX,e.touches[0].clientY); e.preventDefault(); }},{passive:false});
+document.addEventListener('mouseup', drop);
+document.addEventListener('touchend', drop);
+
+function mv(cx,cy){
+  const wr=document.getElementById('words-box').getBoundingClientRect();
+  dragging.style.left=(cx-dox-wr.left)+'px';
+  dragging.style.top=(cy-doy-wr.top)+'px';
+}
+
+function drop(e){
+  if(!dragging) return;
+  const el=dragging; dragging=null; el.classList.remove('drag');
+  const cx=e.changedTouches?e.changedTouches[0].clientX:e.clientX;
+  const cy=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+  const sr=document.getElementById('svg-wrap').getBoundingClientRect();
+  const svgEl=document.getElementById('svg');
+  const vb=svgEl.viewBox.baseVal;
+  const sx=(cx-sr.left)/sr.width*vb.width;
+  const sy=(cy-sr.top)/sr.height*vb.height;
+  const id=el.dataset.id;
+
+  if(cx>=sr.left&&cx<=sr.right&&cy>=sr.top&&cy<=sr.bottom){
+    let hit=null;
+    PARTS.forEach(p=>{ if(!solved[p.id]&&Math.hypot(sx-p.cx,sy-p.cy)<p.r*1.8) hit=p; });
+    attempts++;
+    document.getElementById('stry').textContent=attempts;
+
+    if(hit&&hit.id===id){
+      solved[id]=true; el.classList.add('done');
+      fb(hit.label+' — correcto!','ok');
+      document.getElementById('sok').textContent=Object.keys(solved).length;
+      drawZones();
+      if(Object.keys(solved).length===PARTS.length){
+        document.getElementById('win-msg').textContent='Completaste el diagrama con '+attempts+' intentos.';
+        document.getElementById('win').style.display='block';
+      }
+    } else if(hit){
+      fb('Ese es otro componente. Intentá de nuevo.','err'); snap(el);
+    } else {
+      fb('Soltalo sobre un círculo ? del dibujo.',''); snap(el);
+    }
+  } else { snap(el); }
+}
+
+function snap(el){
+  const box=document.getElementById('words-box');
+  const bw=box.offsetWidth||200, bh=box.offsetHeight||340;
+  const cw=el.textContent.length*7.8+24;
+  el.style.transition='left .25s,top .25s';
+  el.style.left=Math.max(6,Math.min(bw-cw-6,6+Math.random()*(bw-cw-12)))+'px';
+  el.style.top=(24+Math.random()*Math.max(0,bh-64))+'px';
+  setTimeout(()=>el.style.transition='',260);
+}
+
+let fbt=null;
+function fb(msg,cls){
+  const el=document.getElementById('fb');
+  el.textContent=msg; el.className=cls;
+  clearTimeout(fbt);
+  fbt=setTimeout(()=>{el.className='';el.textContent='Arrastrá un nombre sobre el círculo ? que corresponde';},3500);
+}
+
+function resetGame(){
+  solved={}; attempts=0;
+  document.getElementById('sok').textContent='0';
+  document.getElementById('stry').textContent='0';
+  document.getElementById('win').style.display='none';
+  document.getElementById('fb').className='';
+  document.getElementById('fb').textContent='Arrastrá un nombre sobre el círculo ? que corresponde';
+  drawZones(); makeChips();
+}
+
+function startGame(){
+  document.getElementById('splash').style.display='none';
+  document.getElementById('game').style.display='flex';
+  buildSVG();
+  setTimeout(makeChips, 50);
+}
+
+window.addEventListener('resize',()=>{
+  if(document.getElementById('game').style.display!=='none') makeChips();
+});
+</script>
+</body>
+</html>
