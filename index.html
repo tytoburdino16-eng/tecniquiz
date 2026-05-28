@@ -906,7 +906,11 @@ function teacherBankPanel(){
   return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
     '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Preguntas</h1>'+
     '<span class="sp"></span>'+
-    '<button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Nueva pregunta</button>'+
+    '<div class="row" style="gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-sm" onclick="teacherDownloadTemplate()" title="Descargar plantilla CSV">📄 Plantilla</button>'+
+      '<button class="btn btn-sm" onclick="teacherOpenImportCSV()">📥 Importar CSV</button>'+
+      '<button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Nueva</button>'+
+    '</div>'+
     '</div>'+
     '<div id="teacher-bank-wrap"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
 }
@@ -1490,10 +1494,18 @@ function teacherCrearSala(){
       return;
     }
 
-    // Mezclar y tomar 'count' preguntas
+    // Mezclar preguntas y opciones aleatoriamente
     var shuffled = pool.slice().sort(function(){return Math.random()-.5;});
     var preguntas = shuffled.slice(0, Math.min(count, shuffled.length)).map(function(pq){
-      return {q: pq.pregunta, opts: pq.opciones, a: pq.correcta};
+      // Mezclar opciones (Fisher-Yates) para que la correcta no sea siempre la misma posición
+      var opciones = (pq.opciones||[]).slice();
+      var correctaText = opciones[pq.correcta];
+      for(var j=opciones.length-1;j>0;j--){
+        var k=Math.floor(Math.random()*(j+1));
+        var tmp=opciones[j];opciones[j]=opciones[k];opciones[k]=tmp;
+      }
+      var newCorrecta = opciones.indexOf(correctaText);
+      return {q: pq.pregunta, opts: opciones, a: newCorrecta};
     });
 
     var codigo = genCode();
@@ -2240,6 +2252,236 @@ function teacherBank(){
 
 
 console.log("TecniQuiz v3.1 loaded OK");
+
+// ══════════════════════════════════════════════════
+// IMPORTAR PREGUNTAS DESDE CSV
+// Formato: pregunta,correcta,op2,op3,op4,materia,trimestre,tema
+// ══════════════════════════════════════════════════
+
+function teacherOpenImportCSV(){
+  h('tb-modal-root',
+    '<div class="overlay" onclick="closeTBModal()">'+
+    '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
+      '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+        '<span class="modal-title">📥 Importar preguntas desde CSV</span>'+
+        '<button class="close-btn" onclick="closeTBModal()">×</button>'+
+      '</div>'+
+      '<div class="modal-body">'+
+        '<div class="card" style="background:#F9731610;border-color:#F9731640;margin-bottom:16px">'+
+          '<div class="card-title">Formato del archivo CSV</div>'+
+          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#9CA3AF;line-height:1.8;background:#080A0F;padding:12px;border-radius:8px;overflow-x:auto;white-space:nowrap">'+
+            'pregunta,correcta,op2,op3,op4,materia,trimestre,tema<br>'+
+            '¿Qué es HR?,Humedad Relativa,Humedad Real,Humedad Residual,Humedad Regulada,Instalaciones Térmicas,1° Trimestre,Psicrometría<br>'+
+            '¿Norma del gas?,NAG 200,NAG 100,IRAM 11601,AEA 90364,Instalaciones Térmicas,2° Trimestre,Gas'+
+          '</div>'+
+          '<div style="font-size:12px;color:#4B5563;margin-top:10px;line-height:1.6">'+
+            '• La <strong style="color:#F97316">primera columna</strong> es la pregunta<br>'+
+            '• La <strong style="color:#10B981">segunda columna</strong> es SIEMPRE la respuesta correcta<br>'+
+            '• Las columnas 3,4,5 son las opciones incorrectas<br>'+
+            '• El sistema mezcla las 4 opciones automáticamente<br>'+
+            '• trimestre: 1° Trimestre / 2° Trimestre / 3° Trimestre / Anual'+
+          '</div>'+
+        '</div>'+
+        '<div style="margin-bottom:14px">'+
+          '<label class="field-label">Seleccionar archivo CSV</label>'+
+          '<input type="file" id="csv-file" accept=".csv,.txt" style="width:100%;padding:10px;background:#080A0F;border:1.5px solid #1E2333;border-radius:8px;color:#F0EDE8;cursor:pointer">'+
+        '</div>'+
+        '<div id="csv-preview" style="display:none">'+
+          '<div class="card-title" id="csv-preview-title"></div>'+
+          '<div id="csv-preview-list" style="max-height:240px;overflow-y:auto"></div>'+
+        '</div>'+
+        '<div class="modal-footer">'+
+          '<button class="btn" onclick="closeTBModal()">Cancelar</button>'+
+          '<button class="btn btn-primary" id="csv-import-btn" onclick="csvDoImport()" style="display:none">✓ Importar todas</button>'+
+        '</div>'+
+      '</div>'+
+    '</div></div>'
+  );
+
+  // Listener para el file input
+  setTimeout(function(){
+    var fileInput = document.getElementById('csv-file');
+    if(fileInput) fileInput.addEventListener('change', csvPreview);
+  }, 100);
+}
+
+var CSV_PARSED = [];
+
+function csvPreview(e){
+  var file = e.target.files[0];
+  if(!file){ return; }
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var text = ev.target.result;
+    CSV_PARSED = csvParse(text);
+    var preview = document.getElementById('csv-preview');
+    var previewTitle = document.getElementById('csv-preview-title');
+    var previewList = document.getElementById('csv-preview-list');
+    var importBtn = document.getElementById('csv-import-btn');
+    if(!preview||!previewTitle||!previewList||!importBtn) return;
+
+    if(CSV_PARSED.length === 0){
+      previewTitle.textContent = '⚠ No se encontraron preguntas válidas';
+      preview.style.display='block';
+      return;
+    }
+
+    previewTitle.innerHTML = '✓ <span style="color:#10B981">'+CSV_PARSED.length+' preguntas detectadas</span> — Vista previa:';
+    preview.style.display = 'block';
+    importBtn.style.display = 'inline-flex';
+
+    previewList.innerHTML = CSV_PARSED.slice(0,5).map(function(pq, i){
+      return '<div class="card" style="margin-bottom:8px;padding:12px">'+
+        '<div style="font-size:13px;font-weight:700;margin-bottom:6px">'+(i+1)+'. '+pq.pregunta+'</div>'+
+        '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">'+
+          '<span class="tag tag-teacher" style="font-size:9px">'+pq.materia+'</span>'+
+          (pq.trimestre?'<span class="tag tag-sky" style="font-size:9px">'+pq.trimestre+'</span>':'')+
+          (pq.tema?'<span class="tag tag-violet" style="font-size:9px">'+pq.tema+'</span>':'')+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+
+        pq.opciones.map(function(op, j){
+          var correct = j===pq.correcta;
+          return '<div style="padding:5px 10px;border-radius:6px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98112':'#11141C')+';font-size:11px;color:'+(correct?'#10B981':'#6B7280')+'">'+
+            ['A','B','C','D'][j]+'. '+op+(correct?' ✓':'')+
+          '</div>';
+        }).join('')+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    (CSV_PARSED.length>5?'<div style="text-align:center;padding:10px;color:#4B5563;font-size:12px">... y '+(CSV_PARSED.length-5)+' preguntas más</div>':'');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function csvParse(text){
+  // Remove BOM if present
+  text = text.replace(/^\uFEFF/, '');
+  var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+  if(lines.length === 0) return [];
+
+  // Check if first line is header
+  var startLine = 0;
+  var firstLower = lines[0].toLowerCase();
+  if(firstLower.startsWith('pregunta') || firstLower.startsWith('question')){
+    startLine = 1;
+  }
+
+  var result = [];
+  var materias = window._teacherMaterias || [];
+
+  for(var i=startLine; i<lines.length; i++){
+    var cols = csvSplitLine(lines[i]);
+    if(cols.length < 5) continue; // Need at least pregunta + 4 opciones
+
+    var pregunta = cols[0].trim();
+    var correctaText = cols[1].trim();
+    var op2 = cols[2] ? cols[2].trim() : '';
+    var op3 = cols[3] ? cols[3].trim() : '';
+    var op4 = cols[4] ? cols[4].trim() : '';
+    var materia = cols[5] ? cols[5].trim() : (materias[0]||'General');
+    var trimestre = cols[6] ? cols[6].trim() : 'todos';
+    var tema = cols[7] ? cols[7].trim() : '';
+
+    if(!pregunta||!correctaText||!op2||!op3||!op4) continue;
+
+    // Mezclar opciones aleatoriamente
+    var opciones = [correctaText, op2, op3, op4];
+    // Fisher-Yates shuffle
+    for(var j=opciones.length-1; j>0; j--){
+      var k = Math.floor(Math.random()*(j+1));
+      var tmp = opciones[j]; opciones[j]=opciones[k]; opciones[k]=tmp;
+    }
+    var correctaIdx = opciones.indexOf(correctaText);
+
+    result.push({
+      pregunta: pregunta,
+      opciones: opciones,
+      correcta: correctaIdx,
+      materia: materia,
+      trimestre: trimestre,
+      tema: tema,
+      dificultad: 'media',
+    });
+  }
+  return result;
+}
+
+function csvSplitLine(line){
+  // Handle quoted fields (fields with commas inside quotes)
+  var result = [];
+  var current = '';
+  var inQuotes = false;
+  for(var i=0; i<line.length; i++){
+    var ch = line[i];
+    if(ch==='"'){
+      inQuotes = !inQuotes;
+    } else if(ch===',' && !inQuotes){
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function csvDoImport(){
+  if(!CSV_PARSED||CSV_PARSED.length===0){
+    toast('No hay preguntas para importar','err');
+    return;
+  }
+  var btn = document.getElementById('csv-import-btn');
+  if(btn){ btn.textContent='Importando...'; btn.disabled=true; }
+
+  var updates = {};
+  var key = emailToKey(STATE.profile.email);
+  CSV_PARSED.forEach(function(pq){
+    var ref = db.ref('banco').push().key;
+    updates['banco/'+ref] = {
+      pregunta: pq.pregunta,
+      opciones: pq.opciones,
+      correcta: pq.correcta,
+      materia: pq.materia,
+      trimestre: pq.trimestre,
+      tema: pq.tema,
+      dificultad: pq.dificultad,
+      creadoPor: STATE.profile.email,
+      creadoEn: Date.now(),
+    };
+  });
+
+  db.ref().update(updates).then(function(){
+    closeTBModal();
+    toast('✓ '+CSV_PARSED.length+' preguntas importadas correctamente');
+    CSV_PARSED = [];
+    teacherBankLoad();
+  }).catch(function(err){
+    toast('Error al importar: '+err.message,'err');
+    if(btn){ btn.textContent='✓ Importar todas'; btn.disabled=false; }
+  });
+}
+
+// ── Plantilla CSV descargable ──────────────────────
+function teacherDownloadTemplate(){
+  var materias = window._teacherMaterias || ['Instalaciones Térmicas'];
+  var materia = materias[0] || 'Materia';
+  var csv = 'pregunta,correcta,op2,op3,op4,materia,trimestre,tema\n'+
+    '¿Ejemplo de pregunta 1?,Respuesta correcta,Opción incorrecta 2,Opción incorrecta 3,Opción incorrecta 4,'+materia+',1° Trimestre,Unidad 1\n'+
+    '¿Ejemplo de pregunta 2?,Respuesta correcta,Opción incorrecta 2,Opción incorrecta 3,Opción incorrecta 4,'+materia+',1° Trimestre,Unidad 1\n'+
+    '¿Ejemplo de pregunta 3?,Respuesta correcta,Opción incorrecta 2,Opción incorrecta 3,Opción incorrecta 4,'+materia+',2° Trimestre,Unidad 2\n';
+
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'plantilla_preguntas_tecniquiz.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Plantilla descargada ✓');
+}
+
+
 render();
 </script>
 </body>
