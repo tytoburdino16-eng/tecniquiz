@@ -653,17 +653,7 @@ function loadAdminCourses(){
   });
 }
 
-function adminBank(){
-  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Banco de Preguntas</h1>'+
-    '<span class="sp"></span>'+
-    '<button class="btn btn-primary" onclick="toast(\'Próximamente\',\'info\')">＋ Nueva pregunta</button>'+
-    '</div>'+
-    '<div class="card">'+
-    '<p style="font-size:14px;color:#4B5563;line-height:1.8">El banco tiene <strong style="color:#F97316">220 preguntas</strong> de todas las materias MMO.<br><br>'+
-    'Próximamente podrás agregar, editar y clasificar preguntas por materia, año y dificultad.</p>'+
-    '</div>';
-}
+// adminBank — defined in bank module below
 
 function adminRanking(){
   return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
@@ -703,6 +693,7 @@ function renderTeacher(){
     {id:"dashboard",icon:"⊞",label:"Inicio"},
     {id:"tasks",icon:"📋",label:"Tareas"},
     {id:"quiz",icon:"⚡",label:"Quiz"},
+    {id:"bank",icon:"✦",label:"Preguntas"},
     {id:"results",icon:"📊",label:"Resultados"},
   ];
   g("app").innerHTML=
@@ -714,9 +705,10 @@ function renderTeacher(){
 }
 
 function renderTeacherTab(){
-  var fns={"dashboard":teacherDashboard,"tasks":teacherTasks,"quiz":teacherQuiz,"results":teacherResults};
+  var fns={"dashboard":teacherDashboard,"tasks":teacherTasks,"quiz":teacherQuiz,"bank":teacherBankPanel,"results":teacherResults};
   h("main-panel","<div class='fu'>"+(fns[STATE.tab]?fns[STATE.tab]():"")+"</div>");
   if(STATE.tab==="tasks") loadTeacherTasks();
+  if(STATE.tab==="bank") teacherBank();
 }
 
 function teacherDashboard(){
@@ -877,6 +869,15 @@ function viewTaskMonitor(taskId){
 }
 
 // teacherQuiz defined in quiz module below
+
+function teacherBankPanel(){
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Preguntas</h1>'+
+    '<span class="sp"></span>'+
+    '<span id="teacher-bank-count" style="font-size:13px;color:#4B5563"></span>'+
+    '</div>'+
+    '<div id="teacher-bank-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
+}
 
 function teacherResults(){
   return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Resultados</h1></div>'+
@@ -1635,6 +1636,346 @@ function studentQuizReset(){
   if(QUIZ.timer) clearInterval(QUIZ.timer);
   QUIZ.salaRef = null; QUIZ.codigo = null;
   setTab('quiz');
+}
+
+
+
+// ══════════════════════════════════════════════════
+// BANCO DE PREGUNTAS — MÓDULO COMPLETO
+// Admin: crear/editar/eliminar preguntas
+// Docente: ver y usar preguntas de sus materias
+// ══════════════════════════════════════════════════
+
+var BANK_STATE = {
+  filtroMateria: 'todas',
+  filtroAnio: 'todos',
+  editando: null,
+};
+
+// Materias disponibles para el banco
+var BANK_MATERIAS = [
+  'Instalaciones Térmicas','Instalaciones Electromecánicas',
+  'Cómputos y Presupuestos','Obra Sanitaria','Topografía y Obras Viales',
+  'Administración y Conducción de Obras','Relaciones Humanas',
+  'Hormigón Armado','Construcciones Complementarias','Albañilería y Fundaciones',
+  'Legislación de la Construcción','Arquitectura II','Construcciones Metálicas y Madera',
+  'Análisis Matemático','Estática y Resistencia de Materiales',
+  'Materiales de Construcción','Arquitectura I','Química Aplicada',
+  'Dibujo Técnico','Matemática','Física','Química','Inglés',
+  'Lengua y Literatura','STE Computación','General'
+];
+
+function adminBank(){
+  setTimeout(loadBankQuestions, 80);
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Banco de Preguntas</h1>'+
+    '<span class="sp"></span>'+
+    '<button class="btn btn-primary" onclick="openBankModal()">＋ Nueva pregunta</button>'+
+    '</div>'+
+    // Filtros
+    '<div class="card" style="padding:14px;margin-bottom:12px">'+
+      '<div class="row" style="gap:10px;flex-wrap:wrap">'+
+        '<select id="bank-filtro-materia" onchange="bankFiltrar()" style="flex:1;min-width:160px">'+
+          '<option value="todas">Todas las materias</option>'+
+          BANK_MATERIAS.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('')+
+        '</select>'+
+        '<select id="bank-filtro-anio" onchange="bankFiltrar()" style="width:130px">'+
+          '<option value="todos">Todos los años</option>'+
+          YEARS.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('')+
+        '</select>'+
+        '<input type="text" id="bank-search" placeholder="Buscar pregunta..." style="flex:1;min-width:180px" oninput="bankFiltrar()">'+
+      '</div>'+
+    '</div>'+
+    // Stats
+    '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px" id="bank-stats">'+
+      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
+    '</div>'+
+    // Lista
+    '<div id="bank-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
+    '<div id="bank-modal-root"></div>';
+}
+
+function loadBankQuestions(){
+  db.ref('banco').once('value').then(function(snap){
+    var todas = [];
+    snap.forEach(function(child){
+      todas.push(Object.assign({id: child.key}, child.val()));
+    });
+
+    // Si no hay preguntas aún, cargar las del banco local
+    if(todas.length === 0){
+      bankSeedInitial(function(){
+        db.ref('banco').once('value').then(function(snap2){
+          var seeded = [];
+          snap2.forEach(function(child){ seeded.push(Object.assign({id:child.key},child.val())); });
+          renderBankList(seeded);
+        });
+      });
+      return;
+    }
+    renderBankList(todas);
+  });
+}
+
+function bankSeedInitial(cb){
+  // Seed con el banco existente del quiz module
+  var updates = {};
+  Object.keys(QUESTION_BANK).forEach(function(materia){
+    QUESTION_BANK[materia].forEach(function(pq){
+      var key2 = db.ref('banco').push().key;
+      updates['banco/'+key2] = {
+        pregunta: pq.q,
+        opciones: pq.opts,
+        correcta: pq.a,
+        materia: materia,
+        anio: '7° Año',
+        dificultad: 'media',
+        creadoPor: STATE.profile.email,
+        creadoEn: Date.now(),
+      };
+    });
+  });
+  GENERIC_QUESTIONS.forEach(function(pq){
+    var key2 = db.ref('banco').push().key;
+    updates['banco/'+key2] = {
+      pregunta: pq.q,
+      opciones: pq.opts,
+      correcta: pq.a,
+      materia: 'General',
+      anio: 'todos',
+      dificultad: 'media',
+      creadoPor: STATE.profile.email,
+      creadoEn: Date.now(),
+    };
+  });
+  db.ref().update(updates).then(function(){
+    toast('Banco inicializado con '+Object.keys(updates).length+' preguntas');
+    if(cb) cb();
+  });
+}
+
+function bankFiltrar(){
+  var materia = g('bank-filtro-materia') ? g('bank-filtro-materia').value : 'todas';
+  var anio = g('bank-filtro-anio') ? g('bank-filtro-anio').value : 'todos';
+  var search = g('bank-search') ? g('bank-search').value.toLowerCase() : '';
+  BANK_STATE.filtroMateria = materia;
+  BANK_STATE.filtroAnio = anio;
+
+  db.ref('banco').once('value').then(function(snap){
+    var todas = [];
+    snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
+    var filtered = todas.filter(function(p){
+      var matchM = materia==='todas' || p.materia===materia;
+      var matchA = anio==='todos' || p.anio===anio;
+      var matchS = !search || p.pregunta.toLowerCase().includes(search);
+      return matchM && matchA && matchS;
+    });
+    renderBankList(filtered, todas.length);
+  });
+}
+
+function renderBankList(preguntas, total){
+  var totalAll = total || preguntas.length;
+  var materias = {};
+  preguntas.forEach(function(p){ materias[p.materia]=(materias[p.materia]||0)+1; });
+
+  // Stats
+  var statsEl = g('bank-stats');
+  if(statsEl) statsEl.innerHTML =
+    '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+totalAll+'</div><div class="stat-lbl">Total preguntas</div></div>'+
+    '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+preguntas.length+'</div><div class="stat-lbl">Filtradas</div></div>'+
+    '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+Object.keys(materias).length+'</div><div class="stat-lbl">Materias</div></div>';
+
+  var el = g('bank-list');
+  if(!el) return;
+
+  if(preguntas.length === 0){
+    el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:#374151">No hay preguntas con ese filtro.</div>';
+    return;
+  }
+
+  var difs = {facil:'#10B981',media:'#F59E0B',dificil:'#EF4444'};
+
+  el.innerHTML = preguntas.map(function(p, i){
+    return '<div class="card" style="margin-bottom:10px">'+
+      '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:14px;font-weight:700;line-height:1.4">'+p.pregunta+'</div>'+
+          '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">'+
+            '<span class="tag tag-teacher" style="font-size:9px">'+p.materia+'</span>'+
+            (p.anio&&p.anio!=='todos'?'<span class="tag tag-muted" style="font-size:9px">'+p.anio+'</span>':'')+
+            '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:'+(difs[p.dificultad]||'#374151')+'20;color:'+(difs[p.dificultad]||'#374151')+';font-weight:700">'+( p.dificultad||'media')+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="row" style="gap:6px">'+
+          '<button class="btn btn-sm" onclick="bankEditarPregunta(\''+p.id+'\')">✏️</button>'+
+          '<button class="btn btn-sm btn-danger" onclick="bankEliminar(\''+p.id+'\')">✕</button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+      (p.opciones||[]).map(function(op,j){
+        var correct = j === p.correcta;
+        return '<div style="padding:8px 12px;border-radius:8px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98114':'#11141C')+';font-size:12px;color:'+(correct?'#10B981':'#6B7280')+'">'+
+          '<span style="font-weight:700">'+['A','B','C','D'][j]+'.</span> '+op+
+          (correct?' ✓':'')+
+        '</div>';
+      }).join('')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function openBankModal(id){
+  var isEdit = !!id;
+  var titulo = isEdit ? 'Editar pregunta' : 'Nueva pregunta';
+
+  var loadAndRender = function(data){
+    var materiaOpts = BANK_MATERIAS.map(function(m){
+      return '<option value="'+m+'"'+(data&&data.materia===m?' selected':'')+'>'+m+'</option>';
+    }).join('');
+    var anioOpts = ['todos'].concat(YEARS).map(function(y){
+      return '<option value="'+y+'"'+(data&&data.anio===y?' selected':'')+'>'+y+'</option>';
+    }).join('');
+
+    h('bank-modal-root',
+      '<div class="overlay" onclick="closeBankModal()">'+
+      '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
+        '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+          '<span class="modal-title">'+titulo+'</span>'+
+          '<button class="close-btn" onclick="closeBankModal()">×</button>'+
+        '</div>'+
+        '<div class="modal-body"><div class="col" style="gap:14px">'+
+          '<div><label class="field-label">Pregunta</label>'+
+            '<textarea id="bq-pregunta" rows="3" placeholder="Escribí la pregunta...">'+( data?data.pregunta:'')+'</textarea>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Opción A</label><input type="text" id="bq-a" value="'+(data&&data.opciones?data.opciones[0]:'')+'" placeholder="Opción A"></div>'+
+            '<div><label class="field-label">Opción B</label><input type="text" id="bq-b" value="'+(data&&data.opciones?data.opciones[1]:'')+'" placeholder="Opción B"></div>'+
+            '<div><label class="field-label">Opción C</label><input type="text" id="bq-c" value="'+(data&&data.opciones?data.opciones[2]:'')+'" placeholder="Opción C"></div>'+
+            '<div><label class="field-label">Opción D</label><input type="text" id="bq-d" value="'+(data&&data.opciones?data.opciones[3]:'')+'" placeholder="Opción D"></div>'+
+          '</div>'+
+          '<div><label class="field-label">Respuesta correcta</label>'+
+            '<select id="bq-correcta">'+
+              ['A','B','C','D'].map(function(l,i){
+                return '<option value="'+i+'"'+(data&&data.correcta===i?' selected':'')+'>'+l+'</option>';
+              }).join('')+
+            '</select>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Materia</label><select id="bq-materia">'+materiaOpts+'</select></div>'+
+            '<div><label class="field-label">Año</label><select id="bq-anio">'+anioOpts+'</select></div>'+
+          '</div>'+
+          '<div><label class="field-label">Dificultad</label>'+
+            '<select id="bq-dificultad">'+
+              ['facil','media','dificil'].map(function(d){
+                return '<option value="'+d+'"'+(data&&data.dificultad===d?' selected':'')+'>'+d.charAt(0).toUpperCase()+d.slice(1)+'</option>';
+              }).join('')+
+            '</select>'+
+          '</div>'+
+          '<div class="modal-footer">'+
+            '<button class="btn" onclick="closeBankModal()">Cancelar</button>'+
+            '<button class="btn btn-primary" onclick="bankGuardar(\''+(id||'')+'\')">'+( isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
+          '</div>'+
+        '</div></div>'+
+      '</div></div>'
+    );
+  };
+
+  if(isEdit){
+    db.ref('banco/'+id).once('value').then(function(snap){
+      loadAndRender(snap.val());
+    });
+  } else {
+    loadAndRender(null);
+  }
+}
+
+function bankEditarPregunta(id){ openBankModal(id); }
+
+function closeBankModal(){ h('bank-modal-root',''); }
+
+function bankGuardar(id){
+  var pregunta = g('bq-pregunta') ? g('bq-pregunta').value.trim() : '';
+  var a = g('bq-a') ? g('bq-a').value.trim() : '';
+  var b = g('bq-b') ? g('bq-b').value.trim() : '';
+  var c2 = g('bq-c') ? g('bq-c').value.trim() : '';
+  var d = g('bq-d') ? g('bq-d').value.trim() : '';
+  var correcta = g('bq-correcta') ? parseInt(g('bq-correcta').value) : 0;
+  var materia = g('bq-materia') ? g('bq-materia').value : 'General';
+  var anio = g('bq-anio') ? g('bq-anio').value : 'todos';
+  var dificultad = g('bq-dificultad') ? g('bq-dificultad').value : 'media';
+
+  if(!pregunta){ toast('Ingresá la pregunta','err'); return; }
+  if(!a||!b||!c2||!d){ toast('Completá las 4 opciones','err'); return; }
+
+  var data = {
+    pregunta: pregunta,
+    opciones: [a,b,c2,d],
+    correcta: correcta,
+    materia: materia,
+    anio: anio,
+    dificultad: dificultad,
+    creadoPor: STATE.profile.email,
+    creadoEn: id ? undefined : Date.now(),
+    editadoEn: id ? Date.now() : undefined,
+  };
+  // Remove undefined
+  Object.keys(data).forEach(function(k){ if(data[k]===undefined) delete data[k]; });
+
+  var ref = id ? db.ref('banco/'+id) : db.ref('banco').push();
+  var op = id ? ref.update(data) : ref.set(data);
+
+  op.then(function(){
+    closeBankModal();
+    toast(id ? 'Pregunta actualizada' : 'Pregunta agregada ✓');
+    loadBankQuestions();
+  });
+}
+
+function bankEliminar(id){
+  if(!confirm('¿Eliminar esta pregunta?')) return;
+  db.ref('banco/'+id).remove().then(function(){
+    toast('Pregunta eliminada','info');
+    loadBankQuestions();
+  });
+}
+
+// ── Docente también puede ver el banco de su materia ──
+function teacherBank(){
+  var key = emailToKey(STATE.profile.email);
+  db.ref('users/'+key+'/subjects').once('value').then(function(snap){
+    var subjects = Object.values(snap.val()||{}).map(function(s){return s.subject;});
+    setTimeout(function(){
+      db.ref('banco').once('value').then(function(bsnap){
+        var todas = [];
+        bsnap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
+        var mias = todas.filter(function(p){ return subjects.indexOf(p.materia)>=0; });
+        var el = g('teacher-bank-list');
+        if(!el) return;
+        var difs = {facil:'#10B981',media:'#F59E0B',dificil:'#EF4444'};
+        el.innerHTML = mias.length === 0
+          ? '<p style="color:#374151;text-align:center;padding:24px">No hay preguntas cargadas para tus materias.</p>'
+          : mias.map(function(p){
+              return '<div class="card" style="margin-bottom:8px">'+
+                '<div style="font-size:13px;font-weight:700;margin-bottom:8px">'+p.pregunta+'</div>'+
+                '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
+                  '<span class="tag tag-teacher" style="font-size:9px">'+p.materia+'</span>'+
+                  '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:'+(difs[p.dificultad]||'#374151')+'20;color:'+(difs[p.dificultad]||'#374151')+';font-weight:700">'+( p.dificultad||'media')+'</span>'+
+                '</div>'+
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+
+                (p.opciones||[]).map(function(op,j){
+                  var correct = j===p.correcta;
+                  return '<div style="padding:6px 10px;border-radius:7px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98112':'#11141C')+';font-size:11px;color:'+(correct?'#10B981':'#6B7280')+'">'+
+                    ['A','B','C','D'][j]+'. '+op+(correct?' ✓':'')+
+                  '</div>';
+                }).join('')+
+                '</div>'+
+              '</div>';
+            }).join('');
+        h('teacher-bank-count', mias.length+' preguntas de tus materias');
+      });
+    }, 80);
+  });
 }
 
 
