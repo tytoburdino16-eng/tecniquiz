@@ -163,8 +163,10 @@ textarea{resize:none}
   .login-card{padding:28px 20px}
 
   /* Modales full screen en mobile */
-  .overlay{padding:0;align-items:flex-end}
-  .modal{border-radius:16px 16px 0 0;max-height:92vh;max-width:100%}
+  .overlay{padding:16px 0 0 0;align-items:flex-start}
+  .modal{border-radius:0 0 16px 16px;max-height:96vh;max-width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .modal-body{padding:16px}
+  .modal-header{padding:14px 16px;position:sticky;top:0;background:#0F1117;z-index:2;border-radius:0}
 
   /* Ocultar texto del nav cuando está en modo icon-only */
   .nav-label-desktop{display:none}
@@ -801,10 +803,10 @@ function openNewTask(){
       ?subjects.map(function(s){return '<option value="'+s.year+'|'+s.subject+'">'+s.year+' — '+s.subject+'</option>';}).join("")
       :'<option value="">Sin materias asignadas</option>';
     h("task-modal-root",'<div class="overlay" onclick="closeTModal()">'+
-      '<div class="modal" onclick="event.stopPropagation()">'+
-      '<div class="modal-header"><span class="modal-title">Nueva tarea</span><button class="close-btn" onclick="closeTModal()">×</button></div>'+
+      '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;-webkit-overflow-scrolling:touch">'+
+      '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2"><span class="modal-title">Nueva tarea</span><button class="close-btn" onclick="closeTModal()">×</button></div>'+
       '<div class="modal-body"><div class="col" style="gap:14px">'+
-        '<div><label class="field-label">Título</label><input type="text" id="task-title" placeholder="Ej: Resumen Unidad 2"></div>'+
+        '<div><label class="field-label">Título</label><input type="text" id="task-title" placeholder="Ej: Resumen Unidad 2" autofocus></div>'+
         '<div><label class="field-label">Descripción</label><textarea id="task-desc" rows="3" placeholder="Consigna..."></textarea></div>'+
         '<div><label class="field-label">Grupo / Materia</label><select id="task-group">'+subjOpts+'</select></div>'+
         '<div><label class="field-label">Fecha de entrega</label><input type="datetime-local" id="task-due" style="color:#F0EDE8"></div>'+
