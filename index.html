@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>TecniQuiz — EET N°23</title>
-<!-- v3.1 -->
+<!-- v3.2 ts:1780006306 -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -1033,7 +1033,7 @@ function teacherOpenNuevaPregunta(id){
           '</div>'+
           '<div class="modal-footer">'+
             '<button class="btn" onclick="closeTBModal()">Cancelar</button>'+
-            '<button class="btn btn-primary" onclick="teacherGuardarPregunta(''+(id||'')+'')">'+( isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
+            '<button class="btn btn-primary" onclick="teacherGuardarPregunta(\'+(id||\'\')+\')">'+( isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
           '</div>'+
         '</div></div>'+
       '</div></div>'
