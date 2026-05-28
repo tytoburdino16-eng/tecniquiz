@@ -708,7 +708,6 @@ function renderTeacherTab(){
   var fns={"dashboard":teacherDashboard,"tasks":teacherTasks,"quiz":teacherQuiz,"bank":teacherBankPanel,"results":teacherResults};
   h("main-panel","<div class='fu'>"+(fns[STATE.tab]?fns[STATE.tab]():"")+"</div>");
   if(STATE.tab==="tasks") loadTeacherTasks();
-  if(STATE.tab==="bank") teacherBank();
 }
 
 function teacherDashboard(){
@@ -871,12 +870,228 @@ function viewTaskMonitor(taskId){
 // teacherQuiz defined in quiz module below
 
 function teacherBankPanel(){
+  var key = emailToKey(STATE.profile.email);
+  db.ref('users/'+key+'/subjects').once('value').then(function(snap){
+    var subjects = Object.values(snap.val()||{});
+    var materias = subjects.map(function(s){return s.subject;});
+    if(materias.length === 0){
+      h('teacher-bank-wrap','<div class="card" style="text-align:center;padding:40px;color:#374151">No tenés materias asignadas. Contactá al administrador.</div>');
+      return;
+    }
+    // Filtros
+    var materiaOpts = '<option value="todas">Todas mis materias</option>'+
+      materias.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('');
+    var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
+      return '<option value="'+c2+'">'+c2+'</option>';
+    }).join('');
+    h('teacher-bank-wrap',
+      '<div class="card" style="padding:14px;margin-bottom:12px">'+
+        '<div class="row" style="gap:10px;flex-wrap:wrap">'+
+          '<select id="tb-filtro-materia" onchange="teacherBankLoad()" style="flex:1;min-width:150px">'+materiaOpts+'</select>'+
+          '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="width:150px">'+cuatriOpts+'</select>'+
+          '<input type="text" id="tb-search" placeholder="Buscar..." style="flex:1;min-width:150px" oninput="teacherBankLoad()">'+
+        '</div>'+
+      '</div>'+
+      '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px" id="tb-stats">'+
+        '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
+      '</div>'+
+      '<div id="tb-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
+      '<div id="tb-modal-root"></div>'
+    );
+    // Guardar materias del docente para uso en modal
+    window._teacherMaterias = materias;
+    setTimeout(teacherBankLoad, 80);
+  });
   return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Preguntas</h1>'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Preguntas</h1>'+
     '<span class="sp"></span>'+
-    '<span id="teacher-bank-count" style="font-size:13px;color:#4B5563"></span>'+
+    '<button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Nueva pregunta</button>'+
     '</div>'+
-    '<div id="teacher-bank-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
+    '<div id="teacher-bank-wrap"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
+}
+
+function teacherBankLoad(){
+  var materias = window._teacherMaterias || [];
+  var filtroM = g('tb-filtro-materia') ? g('tb-filtro-materia').value : 'todas';
+  var filtroT = g('tb-filtro-cuatri') ? g('tb-filtro-cuatri').value : 'todos';
+  var search = g('tb-search') ? g('tb-search').value.toLowerCase() : '';
+
+  db.ref('banco').once('value').then(function(snap){
+    var todas = [];
+    snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
+
+    // Solo las de mis materias
+    var mias = todas.filter(function(p){ return materias.indexOf(p.materia)>=0; });
+    var totalMias = mias.length;
+
+    // Aplicar filtros
+    var filtered = mias.filter(function(p){
+      var matchM = filtroM==='todas' || p.materia===filtroM;
+      var matchC = filtroT==='todos' || p.trimestre===filtroT;
+      var matchS = !search || p.pregunta.toLowerCase().includes(search);
+      return matchM && matchC && matchS;
+    });
+
+    // Stats
+    var statsEl = g('tb-stats');
+    if(statsEl) statsEl.innerHTML =
+      '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+totalMias+'</div><div class="stat-lbl">Total mis preguntas</div></div>'+
+      '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+filtered.length+'</div><div class="stat-lbl">Filtradas</div></div>'+
+      '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+materias.length+'</div><div class="stat-lbl">Mis materias</div></div>';
+
+    var el = g('tb-list');
+    if(!el) return;
+    if(filtered.length === 0){
+      el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:#374151">'+
+        (totalMias===0
+          ? 'No tenés preguntas cargadas aún.<br><br><button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Agregar primera pregunta</button>'
+          : 'Sin resultados para ese filtro.')+
+        '</div>';
+      return;
+    }
+
+    var difs = {facil:'#10B981',media:'#F59E0B',dificil:'#EF4444'};
+    el.innerHTML = filtered.map(function(p){
+      return '<div class="card" style="margin-bottom:10px">'+
+        '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-size:14px;font-weight:700;line-height:1.4">'+p.pregunta+'</div>'+
+            '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">'+
+              '<span class="tag tag-teacher" style="font-size:9px">'+p.materia+'</span>'+
+              (p.trimestre&&p.trimestre!=='todos'?'<span class="tag tag-sky" style="font-size:9px">'+p.trimestre+'</span>':'')+
+              (p.tema?'<span class="tag tag-violet" style="font-size:9px">'+p.tema+'</span>':'')+
+              '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:'+(difs[p.dificultad]||'#374151')+'20;color:'+(difs[p.dificultad]||'#374151')+';font-weight:700">'+(p.dificultad||'media')+'</span>'+
+            '</div>'+
+          '</div>'+
+          '<div class="row" style="gap:6px">'+
+            '<button class="btn btn-sm" onclick="teacherEditarPregunta(''+p.id+'')">✏️</button>'+
+            '<button class="btn btn-sm btn-danger" onclick="teacherEliminarPregunta(''+p.id+'')">✕</button>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        (p.opciones||[]).map(function(op,j){
+          var correct = j===p.correcta;
+          return '<div style="padding:8px 12px;border-radius:8px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98114':'#11141C')+';font-size:12px;color:'+(correct?'#10B981':'#6B7280')+'">'+
+            '<span style="font-weight:700">'+['A','B','C','D'][j]+'.</span> '+op+(correct?' ✓':'')+
+          '</div>';
+        }).join('')+
+        '</div>'+
+      '</div>';
+    }).join('');
+  });
+}
+
+function teacherOpenNuevaPregunta(id){
+  var materias = window._teacherMaterias || [];
+  if(materias.length===0){toast('Sin materias asignadas','err');return;}
+  var isEdit = !!id;
+
+  var renderModal = function(data){
+    var materiaOpts = materias.map(function(m){
+      return '<option value="'+m+'"'+(data&&data.materia===m?' selected':'')+'>'+m+'</option>';
+    }).join('');
+    var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
+      return '<option value="'+c2+'"'+(data&&data.trimestre===c2?' selected':'')+'>'+c2+'</option>';
+    }).join('');
+    h('tb-modal-root',
+      '<div class="overlay" onclick="closeTBModal()">'+
+      '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
+        '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+          '<span class="modal-title">'+(isEdit?'Editar pregunta':'Nueva pregunta')+'</span>'+
+          '<button class="close-btn" onclick="closeTBModal()">×</button>'+
+        '</div>'+
+        '<div class="modal-body"><div class="col" style="gap:14px">'+
+          '<div><label class="field-label">Pregunta</label>'+
+            '<textarea id="tb-pregunta" rows="3" placeholder="Escribí la pregunta...">'+(data?data.pregunta:'')+'</textarea>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Opción A</label><input type="text" id="tb-a" value="'+(data&&data.opciones?data.opciones[0]:'')+'" placeholder="Opción A"></div>'+
+            '<div><label class="field-label">Opción B</label><input type="text" id="tb-b" value="'+(data&&data.opciones?data.opciones[1]:'')+'" placeholder="Opción B"></div>'+
+            '<div><label class="field-label">Opción C</label><input type="text" id="tb-c" value="'+(data&&data.opciones?data.opciones[2]:'')+'" placeholder="Opción C"></div>'+
+            '<div><label class="field-label">Opción D</label><input type="text" id="tb-d" value="'+(data&&data.opciones?data.opciones[3]:'')+'" placeholder="Opción D"></div>'+
+          '</div>'+
+          '<div><label class="field-label">Respuesta correcta</label>'+
+            '<select id="tb-correcta">'+
+              ['A','B','C','D'].map(function(l,i){return '<option value="'+i+'"'+(data&&data.correcta===i?' selected':'')+'>'+l+'</option>';}).join('')+
+            '</select>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Materia</label><select id="tb-materia">'+materiaOpts+'</select></div>'+
+            '<div><label class="field-label">Trimestre</label><select id="tb-tri">'+cuatriOpts+'</select></div>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Tema / Unidad</label>'+
+              '<input type="text" id="tb-tema" value="'+(data&&data.tema?data.tema:'')+'" placeholder="Ej: Unidad 2 — Ventilación"></div>'+
+            '<div><label class="field-label">Dificultad</label>'+
+              '<select id="tb-dificultad">'+
+                ['facil','media','dificil'].map(function(d){
+                  return '<option value="'+d+'"'+(data&&data.dificultad===d?' selected':'')+'>'+d.charAt(0).toUpperCase()+d.slice(1)+'</option>';
+                }).join('')+
+              '</select>'+
+            '</div>'+
+          '</div>'+
+          '<div class="modal-footer">'+
+            '<button class="btn" onclick="closeTBModal()">Cancelar</button>'+
+            '<button class="btn btn-primary" onclick="teacherGuardarPregunta(''+(id||'')+'')">'+( isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
+          '</div>'+
+        '</div></div>'+
+      '</div></div>'
+    );
+  };
+
+  if(isEdit){
+    db.ref('banco/'+id).once('value').then(function(snap){ renderModal(snap.val()); });
+  } else {
+    renderModal(null);
+  }
+}
+
+function teacherEditarPregunta(id){ teacherOpenNuevaPregunta(id); }
+
+function closeTBModal(){ h('tb-modal-root',''); }
+
+function teacherGuardarPregunta(id){
+  var pregunta = g('tb-pregunta') ? g('tb-pregunta').value.trim() : '';
+  var a = g('tb-a') ? g('tb-a').value.trim() : '';
+  var b = g('tb-b') ? g('tb-b').value.trim() : '';
+  var cv = g('tb-c') ? g('tb-c').value.trim() : '';
+  var d = g('tb-d') ? g('tb-d').value.trim() : '';
+  var correcta = g('tb-correcta') ? parseInt(g('tb-correcta').value) : 0;
+  var materia = g('tb-materia') ? g('tb-materia').value : '';
+  var trimestre = g('tb-tri') ? g('tb-tri').value : 'todos';
+  var tema = g('tb-tema') ? g('tb-tema').value.trim() : '';
+  var dificultad = g('tb-dificultad') ? g('tb-dificultad').value : 'media';
+
+  if(!pregunta){ toast('Ingresá la pregunta','err'); return; }
+  if(!a||!b||!cv||!d){ toast('Completá las 4 opciones','err'); return; }
+
+  var data = {
+    pregunta: pregunta,
+    opciones: [a,b,cv,d],
+    correcta: correcta,
+    materia: materia,
+    trimestre: trimestre,
+    dificultad: dificultad,
+    creadoPor: STATE.profile.email,
+  };
+  if(tema) data.tema = tema;
+  if(id){ data.editadoEn = Date.now(); } else { data.creadoEn = Date.now(); }
+
+  var ref = id ? db.ref('banco/'+id) : db.ref('banco').push();
+  var op = id ? ref.update(data) : ref.set(data);
+  op.then(function(){
+    closeTBModal();
+    toast(id ? 'Pregunta actualizada' : '¡Pregunta agregada! ✓');
+    teacherBankLoad();
+  });
+}
+
+function teacherEliminarPregunta(id){
+  if(!confirm('¿Eliminar esta pregunta del banco?')) return;
+  db.ref('banco/'+id).remove().then(function(){
+    toast('Pregunta eliminada','info');
+    teacherBankLoad();
+  });
 }
 
 function teacherResults(){
@@ -1211,7 +1426,9 @@ function teacherOpenCreateSala(){
       '<div class="modal" onclick="event.stopPropagation()">'+
         '<div class="modal-header"><span class="modal-title">Nueva sala de Quiz</span><button class="close-btn" onclick="closeQModal()">×</button></div>'+
         '<div class="modal-body"><div class="col" style="gap:16px">'+
-          '<div><label class="field-label">Materia</label><select id="qs-materia">'+opts+'</select></div>'+
+          '<div><label class="field-label">Materia</label><select id="qs-materia" onchange="checkBancoMateria(this.value)">'+opts+'</select>'+
+          '<div id="qs-banco-info" style="font-size:12px;color:#4B5563;margin-top:5px"></div>'+
+        '</div>'+
           '<div><label class="field-label">Cantidad de preguntas</label>'+
             '<select id="qs-count"><option value="5">5 preguntas</option><option value="10" selected>10 preguntas</option><option value="15">15 preguntas</option><option value="20">20 preguntas</option></select>'+
           '</div>'+
@@ -1230,32 +1447,74 @@ function teacherOpenCreateSala(){
 
 function closeQModal(){h('quiz-modal-root','');}
 
+function checkBancoMateria(materia){
+  var info = g('qs-banco-info');
+  if(!info) return;
+  info.textContent = 'Verificando banco...';
+  db.ref('banco').orderByChild('materia').equalTo(materia).once('value').then(function(snap){
+    var count = snap.numChildren();
+    if(count === 0){
+      info.innerHTML = '<span style="color:#EF4444">⚠ Sin preguntas en Firebase para esta materia. Se usarán preguntas locales.</span>';
+    } else {
+      info.innerHTML = '<span style="color:#10B981">✓ '+count+' preguntas disponibles en el banco</span>';
+    }
+  });
+}
+
 function teacherCrearSala(){
   var materia = g('qs-materia') ? g('qs-materia').value : 'General';
-  var count = parseInt(g('qs-count').value || 10);
-  var timerSeg = parseInt(g('qs-timer').value || 20);
-  var codigo = genCode();
-  var preguntas = getQuestions(materia, count);
+  var count = parseInt(g('qs-count') ? g('qs-count').value : 10);
+  var timerSeg = parseInt(g('qs-timer') ? g('qs-timer').value : 20);
   var key = emailToKey(STATE.profile.email);
 
-  var sala = {
-    codigo: codigo,
-    materia: materia,
-    docente: STATE.profile.name,
-    docenteKey: key,
-    estado: 'waiting',
-    preguntaActual: -1,
-    timerSeg: timerSeg,
-    preguntas: preguntas,
-    creadaEn: Date.now(),
-    jugadores: {},
-    respuestas: {},
-  };
+  // Mostrar spinner en el botón
+  var btn = document.querySelector('#quiz-modal-root .btn-primary');
+  if(btn){ btn.textContent='Cargando preguntas...'; btn.disabled=true; }
 
-  db.ref('salas/'+codigo).set(sala).then(function(){
-    closeQModal();
-    toast('Sala '+codigo+' creada');
-    teacherMonitorSala(codigo);
+  // Leer preguntas del banco Firebase para esa materia
+  db.ref('banco').orderByChild('materia').equalTo(materia).once('value').then(function(snap){
+    var pool = [];
+    snap.forEach(function(child){ pool.push(child.val()); });
+
+    // Si no hay en Firebase, usar banco local
+    if(pool.length === 0){
+      pool = (QUESTION_BANK[materia]||GENERIC_QUESTIONS).map(function(pq){
+        return {pregunta:pq.q, opciones:pq.opts, correcta:pq.a, materia:materia};
+      });
+    }
+
+    if(pool.length === 0){
+      toast('No hay preguntas cargadas para esta materia. Agregá desde el banco.','err');
+      if(btn){ btn.textContent='Crear sala ⚡'; btn.disabled=false; }
+      return;
+    }
+
+    // Mezclar y tomar 'count' preguntas
+    var shuffled = pool.slice().sort(function(){return Math.random()-.5;});
+    var preguntas = shuffled.slice(0, Math.min(count, shuffled.length)).map(function(pq){
+      return {q: pq.pregunta, opts: pq.opciones, a: pq.correcta};
+    });
+
+    var codigo = genCode();
+    var sala = {
+      codigo: codigo,
+      materia: materia,
+      docente: STATE.profile.name,
+      docenteKey: key,
+      estado: 'waiting',
+      preguntaActual: -1,
+      timerSeg: timerSeg,
+      preguntas: preguntas,
+      creadaEn: Date.now(),
+      jugadores: {},
+      respuestas: {},
+    };
+
+    db.ref('salas/'+codigo).set(sala).then(function(){
+      closeQModal();
+      toast('Sala '+codigo+' creada · '+preguntas.length+' preguntas de '+materia);
+      teacherMonitorSala(codigo);
+    });
   });
 }
 
