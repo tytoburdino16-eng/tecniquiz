@@ -4,38 +4,46 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>TecniQuiz — EET N°23</title>
-
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{font-family:'Nunito',sans-serif;background:#080A0F;color:#F0EDE8;min-height:100vh}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0F1117}::-webkit-scrollbar-thumb{background:#1E2333;border-radius:2px}
 input,button,select,textarea{font-family:'Nunito',sans-serif}
 
-/* ── Layout ── */
+/* ── Layout desktop ── */
 #app{min-height:100vh}
 .sidebar{width:220px;background:#0C0E14;border-right:1px solid #1E2333;display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:fixed;left:0;top:0;z-index:100}
 .main-content{margin-left:220px;min-height:100vh;padding:28px}
+
+/* ── Bottom nav mobile ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0C0E14;border-top:1px solid #1E2333;z-index:200;padding:0}
+.bottom-nav-inner{display:flex;align-items:stretch}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 8px;gap:3px;cursor:pointer;color:#4B5563;font-size:10px;font-weight:700;letter-spacing:.3px;border:none;background:none;transition:color .15s;min-height:56px}
+.bnav-item.active{color:#F97316}
+.bnav-item span.ico{font-size:20px;line-height:1}
+
+/* ── Mobile top header ── */
+.mobile-header{display:none;background:#0C0E14;border-bottom:1px solid #1E2333;padding:12px 16px;position:sticky;top:0;z-index:150;align-items:center;gap:10px}
+.mobile-header .logo{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700}
 
 /* ── Buttons ── */
 .btn{padding:10px 22px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #1E2333;background:#11141C;color:#9CA3AF;transition:all .14s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
 .btn:hover:not(:disabled){background:#181C27;color:#F0EDE8;transform:translateY(-1px)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:active{transform:scale(.97)}
 .btn-primary{background:#F97316;border-color:#F97316;color:#080A0F;font-weight:800}
 .btn-primary:hover:not(:disabled){background:#EA6C10;color:#080A0F}
 .btn-danger{background:#EF444418;border-color:#EF444440;color:#EF4444}
 .btn-success{background:#22C55E18;border-color:#22C55E40;color:#22C55E}
-.btn-sm{padding:6px 14px;font-size:12px}
+.btn-sm{padding:8px 14px;font-size:12px}
 .btn-lg{padding:14px 36px;font-size:16px}
 .btn-full{width:100%;justify-content:center}
 .btn-google{background:#fff;border-color:#ddd;color:#333;font-weight:700}
-.btn-google:hover{background:#f5f5f5;transform:translateY(-1px)}
+.btn-google:hover{background:#f5f5f5}
 
 /* ── Cards ── */
 .card{background:#0F1117;border:1px solid #1E2333;border-radius:12px;padding:20px;margin-bottom:14px}
@@ -43,7 +51,7 @@ input,button,select,textarea{font-family:'Nunito',sans-serif}
 
 /* ── Form ── */
 .field-label{font-size:11px;font-weight:700;color:#4B5563;letter-spacing:1px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:block;margin-bottom:6px}
-input[type=text],input[type=email],input[type=password],textarea,select{width:100%;background:#080A0F;border:1.5px solid #1E2333;border-radius:8px;padding:11px 14px;color:#F0EDE8;font-size:14px;outline:none;transition:border .15s}
+input[type=text],input[type=email],input[type=password],textarea,select{width:100%;background:#080A0F;border:1.5px solid #1E2333;border-radius:8px;padding:12px 14px;color:#F0EDE8;font-size:14px;outline:none;transition:border .15s}
 input:focus,textarea:focus,select:focus{border-color:#F97316}
 textarea{resize:none}
 
@@ -88,14 +96,14 @@ textarea{resize:none}
 .spin-el{width:22px;height:22px;border:2px solid #1E2333;border-top-color:#F97316;border-radius:50%;animation:spin .65s linear infinite;display:inline-block}
 
 /* ── Toast ── */
-#toast{position:fixed;top:16px;right:16px;z-index:9999;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;background:#181C27;border:1px solid #2C3348;color:#F0EDE8;box-shadow:0 8px 24px #00000080;display:none;max-width:340px}
+#toast{position:fixed;top:16px;right:16px;z-index:9999;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;background:#181C27;border:1px solid #2C3348;color:#F0EDE8;box-shadow:0 8px 24px #00000080;display:none;max-width:300px}
 
 /* ── Modal ── */
-.overlay{position:fixed;inset:0;background:#000000CC;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay{position:fixed;inset:0;background:#000000CC;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal{background:#0F1117;border:1px solid #2C3348;border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #1E2333}
 .modal-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700}
-.close-btn{background:none;border:none;color:#4B5563;font-size:22px;cursor:pointer;line-height:1}
+.close-btn{background:none;border:none;color:#4B5563;font-size:22px;cursor:pointer;line-height:1;padding:4px 8px}
 .modal-body{padding:22px}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid #1E2333;margin-top:8px}
 
@@ -105,28 +113,85 @@ textarea{resize:none}
 
 /* ── Badge ── */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
-
-/* ── Progress ring ── */
 .pts-badge{background:#F59E0B18;border:1px solid #F59E0B30;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#F59E0B;display:inline-flex;align-items:center;gap:5px}
 
 /* ── Login screen ── */
 .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#F9731610 0%,transparent 60%)}
 .login-card{background:#0F1117;border:1px solid #2C3348;border-radius:16px;padding:40px 36px;width:100%;max-width:420px;text-align:center}
 
-/* ── Responsive ── */
-@media(max-width:700px){
-  .sidebar{width:56px}
-  .sidebar .nav-label,.sidebar .nav-section,.sidebar .sb-user,.sidebar .sb-logo-sub{display:none}
-  .nav-item{justify-content:center;padding:12px}
-  .main-content{margin-left:56px;padding:16px}
-}
-
 /* ── Grid bg ── */
 .grid-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(#1E233308 1px,transparent 1px),linear-gradient(90deg,#1E233308 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
 
-/* ── Task status ── */
+/* ── Task rows ── */
 .task-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#11141C;border-radius:9px;border:1px solid #1E2333;margin-bottom:7px}
 .task-row:hover{border-color:#1E3345}
+
+/* ══════════════════════════════════════
+   RESPONSIVE MOBILE
+══════════════════════════════════════ */
+@media(max-width:700px){
+  /* Ocultar sidebar, mostrar bottom nav y top header */
+  .sidebar{display:none}
+  .bottom-nav{display:block}
+  .mobile-header{display:flex}
+
+  /* Main content ocupa toda la pantalla */
+  .main-content{
+    margin-left:0;
+    padding:16px 14px;
+    padding-bottom:80px; /* espacio para bottom nav */
+  }
+
+  /* Grids en columna única */
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  
+  /* Dos columnas → una columna */
+  div[style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr !important;
+  }
+  
+  /* Page header compacto */
+  .page-header h1{font-size:20px !important}
+
+  /* Cards más compactas */
+  .card{padding:14px;margin-bottom:10px}
+
+  /* Botones full width en mobile */
+  .btn-lg{width:100%;justify-content:center}
+
+  /* Login card */
+  .login-card{padding:28px 20px}
+
+  /* Modales full screen en mobile */
+  .overlay{padding:0;align-items:flex-end}
+  .modal{border-radius:16px 16px 0 0;max-height:92vh;max-width:100%}
+
+  /* Ocultar texto del nav cuando está en modo icon-only */
+  .nav-label-desktop{display:none}
+
+  /* Stat val más pequeño */
+  .stat-val{font-size:24px}
+
+  /* Task rows más compactos */
+  .task-row{padding:8px 12px;gap:8px}
+
+  /* Select en users list */
+  select{font-size:13px}
+
+  /* Fixes para grids inline */
+  [style*="display:grid"]{
+    grid-template-columns:1fr !important;
+  }
+  [style*="display: grid"]{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media(max-width:400px){
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .stat-val{font-size:22px}
+  .main-content{padding:12px 10px;padding-bottom:80px}
+}
 </style>
 </head>
 <body>
@@ -136,7 +201,6 @@ textarea{resize:none}
 <div id="app"></div>
 
 <script>
-// ── Firebase ──────────────────────────────────────
 firebase.initializeApp({
   apiKey:"AIzaSyAawa9s6SUOW8oB5Fx1mZOAMu_1PlDcsg8",
   authDomain:"tecniquiz.firebaseapp.com",
@@ -150,13 +214,8 @@ var auth=firebase.auth();
 var db=firebase.database();
 var googleProvider=new firebase.auth.GoogleAuthProvider();
 
-// ── Admin emails (agregá más acá) ──────────────────
 var ADMIN_EMAILS=["tyto.burdino.16@gmail.com"];
-
-// ── Años de la carrera ─────────────────────────────
 var YEARS=["1° Año","2° Año","3° Año","4° Año","5° Año","6° Año","7° Año"];
-
-// ── Materias por año (del PDF Resolución 2757) ─────
 var SUBJECTS_BY_YEAR={
   "1° Año":["Matemática","Lengua y Literatura","Inglés","Ed. Física","Formación Ética","Tecnología","Taller de la Especialidad"],
   "2° Año":["Matemática","Lengua y Literatura","Inglés","Ed. Física","Historia","Geografía","Tecnología","Taller de la Especialidad"],
@@ -167,15 +226,8 @@ var SUBJECTS_BY_YEAR={
   "7° Año":["Cómputos y Presupuestos","Instalaciones Térmicas","Instalaciones Electromecánicas","Obra Sanitaria","Topografía y Obras Viales","Administración y Conducción de Obras","Relaciones Humanas","Proyecto II","Proyecto Final","Visita de Obras","STE Computación"]
 };
 
-// ── App state ──────────────────────────────────────
-var STATE={
-  user:null,         // Firebase user
-  profile:null,      // {role, name, email, ...}
-  tab:"dashboard",   // current tab
-  loading:true,
-};
+var STATE={user:null,profile:null,tab:"dashboard",loading:true};
 
-// ── Helpers ────────────────────────────────────────
 var AVC=["#F97316","#10B981","#F59E0B","#A78BFA","#F43F5E","#38BDF8","#EC4899","#34D399"];
 function avCol(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%AVC.length;return AVC[h];}
 function ini(n){return n.trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();}
@@ -195,28 +247,20 @@ function emailToKey(e){return e.replace(/\./g,"_").replace(/@/g,"__");}
 function keyToEmail(k){return k.replace(/__/g,"@").replace(/_/g,".");}
 function fmtDate(ts){if(!ts)return"—";var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});}
 function fmtDateTime(ts){if(!ts)return"—";var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});}
+function isMobile(){return window.innerWidth<=700;}
 
-// ── Auth listener ──────────────────────────────────
 auth.onAuthStateChanged(function(user){
   STATE.loading=false;
   if(!user){STATE.user=null;STATE.profile=null;render();return;}
   STATE.user=user;
-  // Load or create profile
   var key=emailToKey(user.email);
   db.ref("users/"+key).once("value").then(function(snap){
     if(snap.exists()){
       STATE.profile=snap.val();
-      // Update last login
       db.ref("users/"+key).update({lastLogin:Date.now(),photoURL:user.photoURL||""});
     } else {
-      // Auto-assign role
       var role=ADMIN_EMAILS.indexOf(user.email)>=0?"admin":"student";
-      var profile={
-        email:user.email,name:user.displayName||user.email,
-        role:role,photoURL:user.photoURL||"",
-        createdAt:Date.now(),lastLogin:Date.now(),
-        points:0,streak:0
-      };
+      var profile={email:user.email,name:user.displayName||user.email,role:role,photoURL:user.photoURL||"",createdAt:Date.now(),lastLogin:Date.now(),points:0,streak:0};
       STATE.profile=profile;
       db.ref("users/"+key).set(profile);
     }
@@ -225,41 +269,82 @@ auth.onAuthStateChanged(function(user){
   });
 });
 
-// ── Login ──────────────────────────────────────────
 function loginGoogle(){
-  auth.signInWithPopup(googleProvider).catch(function(e){
-    toast("Error al iniciar sesión: "+e.message,"err");
-  });
+  auth.signInWithPopup(googleProvider).catch(function(e){toast("Error al iniciar sesión: "+e.message,"err");});
 }
 function logout(){
   auth.signOut().then(function(){STATE.user=null;STATE.profile=null;render();});
 }
 
-// ── RENDER PRINCIPAL ───────────────────────────────
+// ── Sidebar builder (desktop) ──
+function buildSidebar(tabs,roleTag){
+  var navHtml=tabs.map(function(t){
+    return '<div class="nav-item'+(STATE.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+
+      '<span style="font-size:16px">'+t.icon+'</span><span class="nav-label">'+t.label+'</span></div>';
+  }).join("");
+  return '<div class="sidebar">'+
+    '<div style="padding:16px 16px 12px;border-bottom:1px solid #1E2333">'+
+      '<div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700">TECNI<span style="color:#F97316">QUIZ</span></div>'+
+      '<div style="font-size:9px;color:#374151;letter-spacing:1.5px;font-family:\'JetBrains Mono\',monospace;margin-top:2px">EET N°23</div>'+
+    '</div>'+
+    '<div class="nav-section">MENÚ</div>'+
+    navHtml+
+    '<div style="margin-top:auto;border-top:1px solid #1E2333;padding:12px 16px">'+
+      '<div class="row" style="gap:10px">'+
+        avHtml(STATE.profile.name,32)+
+        '<div style="min-width:0;flex:1">'+
+          '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+STATE.profile.name+'</div>'+
+          '<div>'+roleTag+'</div>'+
+        '</div>'+
+        '<button onclick="logout()" style="background:none;border:none;color:#374151;cursor:pointer;font-size:18px" title="Salir">⏏</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── Bottom nav builder (mobile) ──
+function buildBottomNav(tabs){
+  return '<nav class="bottom-nav"><div class="bottom-nav-inner">'+
+    tabs.map(function(t){
+      return '<button class="bnav-item'+(STATE.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+
+        '<span class="ico">'+t.icon+'</span>'+
+        '<span>'+t.label+'</span>'+
+      '</button>';
+    }).join("")+
+    '<button class="bnav-item" onclick="logout()" style="max-width:52px">'+
+      '<span class="ico">⏏</span>'+
+      '<span>Salir</span>'+
+    '</button>'+
+  '</div></nav>';
+}
+
+// ── Mobile top header ──
+function buildMobileHeader(subtitle){
+  return '<header class="mobile-header">'+
+    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:20px;font-weight:700">TECNI<span style="color:#F97316">QUIZ</span></div>'+
+    '<div style="font-size:10px;color:#4B5563;flex:1">'+subtitle+'</div>'+
+    avHtml(STATE.profile.name,32)+
+  '</header>';
+}
+
 function render(){
   var app=g("app");
   if(STATE.loading){
     app.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;"><div class="spin-el"></div></div>';
     return;
   }
-  if(!STATE.user||!STATE.profile){
-    app.innerHTML=renderLogin();
-    return;
-  }
+  if(!STATE.user||!STATE.profile){app.innerHTML=renderLogin();return;}
   var role=STATE.profile.role;
   if(role==="admin") renderAdmin();
   else if(role==="teacher") renderTeacher();
   else renderStudent();
 }
 
-// ══════════════════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════════════════
+// ── LOGIN ──
 function renderLogin(){
   return '<div class="login-screen"><div class="login-card pop">'+
     '<div style="font-size:52px;margin-bottom:14px">🏗️</div>'+
-    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:42px;font-weight:700;letter-spacing:-1px;line-height:1;margin-bottom:6px">'+
-    'TECNI<span style="color:#F97316">QUIZ</span></div>'+
+    '<div style="font-family:\'Rajdhani\',sans-serif;font-size:42px;font-weight:700;letter-spacing:-1px;line-height:1;margin-bottom:6px">TECNI<span style="color:#F97316">QUIZ</span></div>'+
     '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#374151;letter-spacing:2px;margin-bottom:8px">EET N°23 "CAUDILLOS FEDERALES"</div>'+
     '<div style="font-size:11px;color:#4B5563;margin-bottom:28px">Federal, Entre Ríos · Maestro Mayor de Obras</div>'+
     '<button class="btn btn-google btn-full btn-lg" onclick="loginGoogle()" style="margin-bottom:12px;border-radius:10px;font-size:14px;">'+
@@ -270,41 +355,22 @@ function renderLogin(){
 }
 
 // ══════════════════════════════════════════════════
-// ADMIN PANEL
+// ADMIN
 // ══════════════════════════════════════════════════
 function renderAdmin(){
   var tabs=[
-    {id:"dashboard",icon:"⊞",label:"Dashboard"},
+    {id:"dashboard",icon:"⊞",label:"Inicio"},
     {id:"users",icon:"👥",label:"Usuarios"},
     {id:"courses",icon:"📚",label:"Cursos"},
     {id:"bank",icon:"✦",label:"Preguntas"},
     {id:"ranking",icon:"🏆",label:"Ranking"},
   ];
-  var navHtml=tabs.map(function(t){
-    return '<div class="nav-item'+(STATE.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+
-      '<span style="font-size:16px">'+t.icon+'</span><span class="nav-label">'+t.label+'</span></div>';
-  }).join("");
-
   g("app").innerHTML=
-    '<div class="sidebar">'+
-      '<div style="padding:16px 16px 12px;border-bottom:1px solid #1E2333">'+
-        '<div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700">TECNI<span style="color:#F97316">QUIZ</span></div>'+
-        '<div class="sb-logo-sub" style="font-size:9px;color:#374151;letter-spacing:1.5px;font-family:\'JetBrains Mono\',monospace;margin-top:2px">EET N°23</div>'+
-      '</div>'+
-      '<div class="nav-section nav-label">MENÚ</div>'+
-      navHtml+
-      '<div style="margin-top:auto;border-top:1px solid #1E2333;padding:12px 16px" class="sb-user">'+
-        '<div class="row" style="gap:10px">'+
-          avHtml(STATE.profile.name,32)+
-          '<div style="min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+STATE.profile.name+'</div>'+
-          '<div><span class="tag tag-admin" style="font-size:9px">ADMIN</span></div></div>'+
-          '<button onclick="logout()" style="background:none;border:none;color:#374151;cursor:pointer;font-size:18px;margin-left:auto" title="Salir">⏏</button>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="main-content" id="main-panel"></div>'+
-
-  setTimeout(renderAdminTab, 50);
+    buildSidebar(tabs,'<span class="tag tag-admin" style="font-size:9px">ADMIN</span>')+
+    buildMobileHeader('Admin · EET N°23')+
+    buildBottomNav(tabs)+
+    '<div class="main-content" id="main-panel"></div>';
+  setTimeout(renderAdminTab,50);
 }
 
 function renderAdminTab(){
@@ -317,69 +383,57 @@ function renderAdminTab(){
 
 function setTab(t){STATE.tab=t;render();}
 
-// Admin Dashboard
 function adminDashboard(){
-  // Load stats async
   setTimeout(function(){
     db.ref("users").once("value").then(function(snap){
       var users=Object.values(snap.val()||{});
       var teachers=users.filter(function(u){return u.role==="teacher";}).length;
       var students=users.filter(function(u){return u.role==="student";}).length;
-      var statsEl=g("admin-stats");
-      if(statsEl) statsEl.innerHTML=
+      var el=g("admin-stats");if(!el)return;
+      el.innerHTML=
         '<div class="stat-card"><div class="stat-val" style="color:#38BDF8">'+teachers+'</div><div class="stat-lbl">Docentes</div></div>'+
         '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+students+'</div><div class="stat-lbl">Alumnos</div></div>'+
         '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+users.length+'</div><div class="stat-lbl">Total usuarios</div></div>'+
         '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">7</div><div class="stat-lbl">Años activos</div></div>';
     });
   },100);
-
-  return '<div class="row" style="margin-bottom:22px;flex-wrap:wrap;gap:10px">'+
-    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:26px;font-weight:700">Panel de Administración</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Panel de Administración</h1>'+
     '<p style="color:#4B5563;font-size:13px">EET N°23 "Caudillos Federales" · Carrera MMO</p></div>'+
-    '<span class="sp"></span>'+
-    '<span class="tag tag-admin">ADMIN</span>'+
+    '<span class="sp"></span><span class="tag tag-admin">ADMIN</span>'+
     '</div>'+
     '<div class="stat-grid" id="admin-stats">'+
     '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(4)+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
     '<div class="card">'+
       '<div class="card-title">Acciones rápidas</div>'+
       '<div class="col">'+
-        '<button class="btn btn-primary" onclick="setTab(\'users\')">👥 Gestionar usuarios y roles</button>'+
-        '<button class="btn" onclick="setTab(\'courses\')">📚 Ver cursos y grupos</button>'+
-        '<button class="btn" onclick="setTab(\'bank\')">✦ Banco de preguntas</button>'+
-        '<button class="btn" onclick="setTab(\'ranking\')">🏆 Ranking mensual</button>'+
+        '<button class="btn btn-primary btn-full" onclick="setTab(\'users\')">👥 Gestionar usuarios y roles</button>'+
+        '<button class="btn btn-full" onclick="setTab(\'courses\')">📚 Ver cursos y grupos</button>'+
+        '<button class="btn btn-full" onclick="setTab(\'bank\')">✦ Banco de preguntas</button>'+
+        '<button class="btn btn-full" onclick="setTab(\'ranking\')">🏆 Ranking mensual</button>'+
       '</div>'+
     '</div>'+
     '<div class="card">'+
       '<div class="card-title">Sistema de puntos</div>'+
       '<div style="display:flex;flex-direction:column;gap:8px">'+
       [["✅ Tarea entregada a tiempo","+300 pts","#10B981"],
-       ["⚡ Quiz en vivo (por respuesta)","+100-800 pts","#F97316"],
+       ["⚡ Quiz en vivo","+100-800 pts","#F97316"],
        ["🏆 Torneo semanal (top 3)","+500 pts","#F59E0B"],
-       ["📅 Racha de actividad diaria","+50 pts","#A78BFA"],
+       ["📅 Racha diaria","+50 pts","#A78BFA"],
        ["📝 Examen aprobado","+200 pts","#38BDF8"]].map(function(x){
         return '<div class="row" style="font-size:13px"><span style="flex:1;color:#9CA3AF">'+x[0]+'</span>'+
           '<span style="font-weight:700;color:'+x[2]+'">'+x[1]+'</span></div>';
       }).join("")+
       '</div>'+
-    '</div>'+
     '</div>';
 }
 
-// Admin Users
 function adminUsers(){
-  return '<div class="row" style="margin-bottom:22px;flex-wrap:wrap;gap:10px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Gestión de Usuarios</h1>'+
-    '<span class="sp"></span>'+
-    '</div>'+
-    '<div class="card" style="margin-bottom:16px">'+
-    '<div class="card-title">Asignar rol a usuario</div>'+
-    '<p style="font-size:13px;color:#4B5563;margin-bottom:14px">'+
-    'Los usuarios aparecen acá automáticamente cuando ingresan por primera vez con Google. '+
-    'Cambiá el rol según corresponda.</p>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Gestión de Usuarios</h1></div>'+
+    '<div class="card">'+
+    '<div class="card-title">Usuarios registrados</div>'+
+    '<p style="font-size:13px;color:#4B5563;margin-bottom:14px">Los usuarios aparecen acá cuando ingresan por primera vez. Cambiá el rol según corresponda.</p>'+
     '<div id="users-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
     '</div>';
 }
@@ -389,41 +443,38 @@ function loadAdminUsers(){
     var users=Object.values(snap.val()||{});
     var el=g("users-list");if(!el)return;
     if(users.length===0){el.innerHTML='<p style="color:#374151;text-align:center;padding:24px">Ningún usuario registrado aún.</p>';return;}
-    users.sort(function(a,b){var ro={admin:0,teacher:1,student:2};return (ro[a.role]||3)-(ro[b.role]||3);});
+    users.sort(function(a,b){var ro={admin:0,teacher:1,student:2};return(ro[a.role]||3)-(ro[b.role]||3);});
     el.innerHTML=users.map(function(u){
       var roleTag={admin:'<span class="tag tag-admin">ADMIN</span>',teacher:'<span class="tag tag-teacher">DOCENTE</span>',student:'<span class="tag tag-student">ALUMNO</span>'}[u.role]||'<span class="tag tag-muted">SIN ROL</span>';
       var key=emailToKey(u.email);
-      return '<div class="task-row">'+
+      return '<div class="task-row" style="flex-wrap:wrap;gap:8px">'+
         avHtml(u.name,36)+
-        '<div style="flex:1;min-width:0">'+
+        '<div style="flex:1;min-width:120px">'+
           '<div style="font-size:14px;font-weight:700">'+u.name+'</div>'+
-          '<div style="font-size:12px;color:#4B5563">'+u.email+'</div>'+
+          '<div style="font-size:11px;color:#4B5563">'+u.email+'</div>'+
         '</div>'+
-        roleTag+
-        '<select onchange="changeRole(\''+key+'\',this.value)" style="width:130px;padding:6px 10px;font-size:12px;border-radius:7px">'+
-          '<option value="student"'+(u.role==="student"?" selected":"")+'>Alumno</option>'+
-          '<option value="teacher"'+(u.role==="teacher"?" selected":"")+'>Docente</option>'+
-          '<option value="admin"'+(u.role==="admin"?" selected":"")+'>Admin</option>'+
-        '</select>'+
-        (u.role==="teacher"?'<button class="btn btn-sm" onclick="openAssignSubjects(\''+key+'\',\''+u.name.replace(/'/g,"\\'")+'\')">📚 Materias</button>':'')+
+        '<div class="row" style="gap:6px;flex-wrap:wrap">'+
+          roleTag+
+          '<select onchange="changeRole(\''+key+'\',this.value)" style="width:110px;padding:6px 8px;font-size:12px;border-radius:7px">'+
+            '<option value="student"'+(u.role==="student"?" selected":"")+'>Alumno</option>'+
+            '<option value="teacher"'+(u.role==="teacher"?" selected":"")+'>Docente</option>'+
+            '<option value="admin"'+(u.role==="admin"?" selected":"")+'>Admin</option>'+
+          '</select>'+
+          (u.role==="teacher"?'<button class="btn btn-sm" onclick="openAssignSubjects(\''+key+'\',\''+u.name.replace(/'/g,"\\'")+'\')">📚</button>':'')+
+        '</div>'+
       '</div>';
     }).join("");
   });
 }
 
 function changeRole(key,newRole){
-  db.ref("users/"+key).update({role:newRole}).then(function(){
-    toast("Rol actualizado correctamente");
-  });
+  db.ref("users/"+key).update({role:newRole}).then(function(){toast("Rol actualizado");});
 }
 
 function openAssignSubjects(key,name){
   h("modal-root",'<div class="overlay" onclick="closeModal()">'+
     '<div class="modal" onclick="event.stopPropagation()">'+
-    '<div class="modal-header">'+
-      '<span class="modal-title">Asignar materias — '+name+'</span>'+
-      '<button class="close-btn" onclick="closeModal()">×</button>'+
-    '</div>'+
+    '<div class="modal-header"><span class="modal-title">Materias — '+name+'</span><button class="close-btn" onclick="closeModal()">×</button></div>'+
     '<div class="modal-body">'+
     '<p style="font-size:13px;color:#4B5563;margin-bottom:16px">Seleccioná los cursos y materias que dicta este docente:</p>'+
     '<div id="assign-subjects-body"><div class="spin-el" style="margin:0 auto"></div></div>'+
@@ -443,7 +494,7 @@ function loadAssignSubjects(key){
       SUBJECTS_BY_YEAR[yr].forEach(function(subj){
         var sid=yr.replace(/[°\s]/g,"_")+"_"+subj.replace(/[^\w]/g,"_");
         var checked=assigned[sid]?true:false;
-        html+='<label style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid '+(checked?"#F9731650":"#1E2333")+';background:'+(checked?"#F9731612":"#11141C")+';cursor:pointer;font-size:12px">'+
+        html+='<label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;border:1px solid '+(checked?"#F9731650":"#1E2333")+';background:'+(checked?"#F9731612":"#11141C")+';cursor:pointer;font-size:12px">'+
           '<input type="checkbox" '+(checked?"checked":"")+' style="accent-color:#F97316" onchange="toggleSubject(\''+key+'\',\''+sid+'\',\''+yr+'\',\''+subj.replace(/'/g,"\\'")+'\',this.checked)">'+
           subj+'</label>';
       });
@@ -455,26 +506,21 @@ function loadAssignSubjects(key){
 }
 
 function toggleSubject(key,sid,year,subj,checked){
-  var update={};
   if(checked){
-    update["users/"+key+"/subjects/"+sid]={year:year,subject:subj};
+    db.ref("users/"+key+"/subjects/"+sid).set({year:year,subject:subj}).then(function(){toast("Materia asignada");});
   } else {
-    db.ref("users/"+key+"/subjects/"+sid).remove();
-    return;
+    db.ref("users/"+key+"/subjects/"+sid).remove().then(function(){toast("Materia removida","info");});
   }
-  db.ref().update(update).then(function(){toast(checked?"Materia asignada":"Materia removida");});
 }
 
 function closeModal(){h("modal-root","");}
 
-// Admin Courses
 function adminCourses(){
-  return '<div class="row" style="margin-bottom:22px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Cursos y Grupos</h1></div>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Cursos y Grupos</h1></div>'+
     '<div id="courses-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
 }
 
 function loadAdminCourses(){
-  // Show static year structure + student count per year
   db.ref("users").once("value").then(function(snap){
     var users=Object.values(snap.val()||{}).filter(function(u){return u.role==="student";});
     var el=g("courses-list");if(!el)return;
@@ -483,41 +529,36 @@ function loadAdminCourses(){
         var count=users.filter(function(u){return u.year===yr;}).length;
         var cols=["#F97316","#10B981","#F59E0B","#A78BFA","#38BDF8","#EC4899","#34D399"];
         var c=cols[i%cols.length];
-        var subjects=SUBJECTS_BY_YEAR[yr]||[];
         return '<div class="card" style="border-color:'+c+'30">'+
           '<div class="row" style="margin-bottom:12px">'+
-            '<div style="width:42px;height:42px;border-radius:10px;background:'+c+'18;border:1px solid '+c+'30;display:flex;align-items:center;justify-content:center;font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700;color:'+c+'">'+
-              (i+1)+'°</div>'+
+            '<div style="width:42px;height:42px;border-radius:10px;background:'+c+'18;border:1px solid '+c+'30;display:flex;align-items:center;justify-content:center;font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700;color:'+c+'">'+(i+1)+'°</div>'+
             '<div><div style="font-weight:700;font-size:15px">'+yr+'</div>'+
             '<div style="font-size:12px;color:#4B5563">'+count+' alumno'+(count!==1?"s":"")+'</div></div>'+
           '</div>'+
           '<div style="font-size:11px;color:#374151;line-height:1.8">'+
-          subjects.slice(0,5).map(function(s){return '• '+s;}).join('<br>')+
-          (subjects.length>5?'<br><span style="color:#4B5563">+ '+(subjects.length-5)+' más</span>':'')+
-          '</div>'+
-        '</div>';
+          (SUBJECTS_BY_YEAR[yr]||[]).slice(0,4).map(function(s){return '• '+s;}).join('<br>')+
+          ((SUBJECTS_BY_YEAR[yr]||[]).length>4?'<br><span style="color:#4B5563">+ '+((SUBJECTS_BY_YEAR[yr]||[]).length-4)+' más</span>':'')+
+          '</div></div>';
       }).join("")+
     '</div>';
   });
 }
 
-// Admin Bank (preview)
 function adminBank(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Banco de Preguntas</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Banco de Preguntas</h1>'+
     '<span class="sp"></span>'+
-    '<button class="btn btn-primary" onclick="toast(\'Próximamente: agregar preguntas\',\'info\')">＋ Nueva pregunta</button>'+
+    '<button class="btn btn-primary" onclick="toast(\'Próximamente\',\'info\')">＋ Nueva pregunta</button>'+
     '</div>'+
     '<div class="card">'+
-    '<p style="font-size:14px;color:#4B5563;line-height:1.8">El banco de preguntas está integrado en la plataforma con <strong style="color:#F97316">220 preguntas</strong> de todas las materias de la carrera MMO.<br><br>'+
-    'En la próxima actualización vas a poder agregar, editar y eliminar preguntas directamente desde acá, clasificadas por materia, año y dificultad.</p>'+
+    '<p style="font-size:14px;color:#4B5563;line-height:1.8">El banco tiene <strong style="color:#F97316">220 preguntas</strong> de todas las materias MMO.<br><br>'+
+    'Próximamente podrás agregar, editar y clasificar preguntas por materia, año y dificultad.</p>'+
     '</div>';
 }
 
-// Admin Ranking
 function adminRanking(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Ranking Mensual</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Ranking Mensual</h1>'+
     '<span class="sp"></span>'+
     '<span class="tag tag-gold">'+new Date().toLocaleString("es-AR",{month:"long",year:"numeric"}).toUpperCase()+'</span>'+
     '</div>'+
@@ -538,7 +579,7 @@ function loadRanking(){
           avHtml(u.name,34)+
           '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+u.name+'</div>'+
           '<div style="font-size:12px;color:#4B5563">'+u.email+'</div></div>'+
-          '<div class="pts-badge"><span>⭐</span>'+(u.points||0).toLocaleString()+' pts</div>'+
+          '<div class="pts-badge">⭐ '+(u.points||0).toLocaleString()+'</div>'+
         '</div>';
       }).join("")+
     '</div>';
@@ -546,53 +587,26 @@ function loadRanking(){
 }
 
 // ══════════════════════════════════════════════════
-// TEACHER PANEL
+// TEACHER
 // ══════════════════════════════════════════════════
 function renderTeacher(){
   var tabs=[
-    {id:"dashboard",icon:"⊞",label:"Dashboard"},
-    {id:"my-groups",icon:"👥",label:"Mis Grupos"},
+    {id:"dashboard",icon:"⊞",label:"Inicio"},
     {id:"tasks",icon:"📋",label:"Tareas"},
-    {id:"quiz",icon:"⚡",label:"Quiz en Vivo"},
+    {id:"quiz",icon:"⚡",label:"Quiz"},
     {id:"results",icon:"📊",label:"Resultados"},
   ];
-  var navHtml=tabs.map(function(t){
-    return '<div class="nav-item'+(STATE.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+
-      '<span style="font-size:16px">'+t.icon+'</span><span class="nav-label">'+t.label+'</span></div>';
-  }).join("");
-
   g("app").innerHTML=
-    '<div class="sidebar">'+
-      '<div style="padding:16px 16px 12px;border-bottom:1px solid #1E2333">'+
-        '<div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700">TECNI<span style="color:#F97316">QUIZ</span></div>'+
-        '<div style="font-size:9px;color:#374151;letter-spacing:1.5px;font-family:\'JetBrains Mono\',monospace;margin-top:2px">EET N°23</div>'+
-      '</div>'+
-      '<div class="nav-section nav-label">MENÚ</div>'+
-      navHtml+
-      '<div style="margin-top:auto;border-top:1px solid #1E2333;padding:12px 16px" class="sb-user">'+
-        '<div class="row" style="gap:10px">'+
-          avHtml(STATE.profile.name,32)+
-          '<div style="min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+STATE.profile.name+'</div>'+
-          '<div><span class="tag tag-teacher" style="font-size:9px">DOCENTE</span></div></div>'+
-          '<button onclick="logout()" style="background:none;border:none;color:#374151;cursor:pointer;font-size:18px;margin-left:auto" title="Salir">⏏</button>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+    buildSidebar(tabs,'<span class="tag tag-teacher" style="font-size:9px">DOCENTE</span>')+
+    buildMobileHeader('Docente · EET N°23')+
+    buildBottomNav(tabs)+
     '<div class="main-content" id="main-panel"></div>';
-
-  renderTeacherTab();
+  setTimeout(renderTeacherTab,50);
 }
 
 function renderTeacherTab(){
-  var fns={
-    "dashboard":teacherDashboard,
-    "my-groups":teacherGroups,
-    "tasks":teacherTasks,
-    "quiz":teacherQuiz,
-    "results":teacherResults
-  };
+  var fns={"dashboard":teacherDashboard,"tasks":teacherTasks,"quiz":teacherQuiz,"results":teacherResults};
   h("main-panel","<div class='fu'>"+(fns[STATE.tab]?fns[STATE.tab]():"")+"</div>");
-  if(STATE.tab==="my-groups") loadTeacherGroups();
   if(STATE.tab==="tasks") loadTeacherTasks();
 }
 
@@ -602,92 +616,40 @@ function teacherDashboard(){
     db.ref("users/"+key+"/subjects").once("value").then(function(snap){
       var subjects=Object.values(snap.val()||{});
       var el=g("teacher-subjects");if(!el)return;
-      if(subjects.length===0){
-        el.innerHTML='<p style="color:#374151;font-size:13px">No tenés materias asignadas aún. Contactá al administrador.</p>';return;
-      }
+      if(subjects.length===0){el.innerHTML='<p style="color:#374151;font-size:13px">No tenés materias asignadas. Contactá al administrador.</p>';return;}
       el.innerHTML=subjects.map(function(s){
-        return '<div class="list-item" onclick="setTab(\'my-groups\')">'+
-          '<div style="width:38px;height:38px;border-radius:9px;background:#F9731618;border:1px solid #F9731630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#F97316;font-family:\'JetBrains Mono\',monospace">'+
-          s.year.replace("° Año","°")+'</div>'+
+        return '<div class="list-item">'+
+          '<div style="width:38px;height:38px;border-radius:9px;background:#F9731618;border:1px solid #F9731630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#F97316;font-family:\'JetBrains Mono\',monospace">'+s.year.replace("° Año","°")+'</div>'+
           '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+s.subject+'</div>'+
           '<div style="font-size:12px;color:#4B5563">'+s.year+'</div></div>'+
-          '<span style="color:#374151;font-size:18px">›</span>'+
         '</div>';
       }).join("");
     });
   },100);
-
-  return '<div class="row" style="margin-bottom:22px;flex-wrap:wrap;gap:10px">'+
-    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Bienvenido, '+STATE.profile.name.split(" ")[0]+'</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Bienvenido, '+STATE.profile.name.split(" ")[0]+'</h1>'+
     '<p style="color:#4B5563;font-size:13px">Panel docente · EET N°23</p></div>'+
     '<span class="sp"></span><span class="tag tag-teacher">DOCENTE</span>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
     '<div class="card">'+
-      '<div class="card-title">Mis materias asignadas</div>'+
+      '<div class="card-title">Mis materias</div>'+
       '<div id="teacher-subjects"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
     '</div>'+
     '<div class="card">'+
       '<div class="card-title">Acciones rápidas</div>'+
       '<div class="col">'+
-        '<button class="btn btn-primary" onclick="setTab(\'tasks\')">📋 Crear nueva tarea</button>'+
-        '<button class="btn" onclick="setTab(\'quiz\')">⚡ Iniciar Quiz en Vivo</button>'+
-        '<button class="btn" onclick="setTab(\'results\')">📊 Ver resultados</button>'+
+        '<button class="btn btn-primary btn-full" onclick="setTab(\'tasks\')">📋 Crear nueva tarea</button>'+
+        '<button class="btn btn-full" onclick="setTab(\'quiz\')">⚡ Iniciar Quiz en Vivo</button>'+
+        '<button class="btn btn-full" onclick="setTab(\'results\')">📊 Ver resultados</button>'+
       '</div>'+
-    '</div>'+
     '</div>';
 }
 
-function teacherGroups(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Mis Grupos</h1>'+
-    '</div>'+
-    '<div id="teacher-groups-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
-}
-
-function loadTeacherGroups(){
-  var key=emailToKey(STATE.profile.email);
-  db.ref("users/"+key+"/subjects").once("value").then(function(snap){
-    var subjects=Object.values(snap.val()||{});
-    var el=g("teacher-groups-list");if(!el)return;
-    if(subjects.length===0){
-      el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:#374151">No tenés materias asignadas. Contactá al administrador.</div>';return;
-    }
-    // Load students per year
-    db.ref("users").once("value").then(function(usnap){
-      var allUsers=Object.values(usnap.val()||{});
-      el.innerHTML='<div style="display:flex;flex-direction:column;gap:12px">'+
-        subjects.map(function(s){
-          var yrStudents=allUsers.filter(function(u){return u.role==="student"&&u.year===s.year;});
-          return '<div class="card">'+
-            '<div class="row" style="margin-bottom:14px">'+
-              '<div style="flex:1"><div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700">'+s.subject+'</div>'+
-              '<div style="font-size:13px;color:#4B5563">'+s.year+' · '+yrStudents.length+' alumno'+(yrStudents.length!==1?"s registrados":"  registrado")+'</div></div>'+
-              '<button class="btn btn-primary btn-sm" onclick="toast(\'Próximamente: asignar tarea a este grupo\',\'info\')">📋 Asignar tarea</button>'+
-            '</div>'+
-            (yrStudents.length>0?
-            '<div style="display:flex;flex-wrap:wrap;gap:7px">'+
-            yrStudents.slice(0,12).map(function(u){
-              return '<div class="row" style="gap:6px;padding:5px 10px;background:#11141C;border-radius:8px;border:1px solid #1E2333;font-size:12px">'+
-                avHtml(u.name,24)+'<span>'+u.name+'</span>'+
-                '<span class="pts-badge" style="font-size:10px;padding:2px 7px">'+( u.points||0)+' pts</span>'+
-              '</div>';
-            }).join("")+
-            (yrStudents.length>12?'<span style="font-size:12px;color:#374151;padding:5px">+ '+(yrStudents.length-12)+' más</span>':'')+
-            '</div>':
-            '<p style="font-size:13px;color:#374151">Los alumnos aparecen acá cuando ingresan a la plataforma y seleccionan su año.</p>')+
-          '</div>';
-        }).join("")+
-      '</div>';
-    });
-  });
-}
-
 function teacherTasks(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Tareas</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Tareas</h1>'+
     '<span class="sp"></span>'+
-    '<button class="btn btn-primary" onclick="openNewTask()">＋ Nueva tarea</button>'+
+    '<button class="btn btn-primary" onclick="openNewTask()">＋ Nueva</button>'+
     '</div>'+
     '<div id="tasks-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
     '<div id="task-modal-root"></div>';
@@ -703,20 +665,21 @@ function loadTeacherTasks(){
       el.innerHTML='<div class="card" style="text-align:center;padding:40px"><p style="color:#374151;margin-bottom:16px">No creaste ninguna tarea todavía.</p><button class="btn btn-primary" onclick="openNewTask()">＋ Crear primera tarea</button></div>';
       return;
     }
+    var now=Date.now();
     el.innerHTML=tasks.map(function(t){
-      var now=Date.now();var overdue=t.dueDate&&t.dueDate<now;
-      var statusColor=overdue?"#EF4444":t.status==="active"?"#10B981":"#374151";
-      var statusLabel=overdue?"Vencida":t.status==="active"?"Activa":"Borrador";
+      var overdue=t.dueDate&&t.dueDate<now;
+      var sc=overdue?"#EF4444":t.status==="active"?"#10B981":"#374151";
+      var sl=overdue?"Vencida":t.status==="active"?"Activa":"Borrador";
       return '<div class="card">'+
-        '<div class="row" style="margin-bottom:10px">'+
-          '<div style="flex:1"><div style="font-size:16px;font-weight:700">'+t.title+'</div>'+
+        '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
+          '<div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">'+t.title+'</div>'+
           '<div style="font-size:12px;color:#4B5563">'+t.year+' · '+t.subject+'</div></div>'+
-          '<span style="font-size:11px;background:'+statusColor+'18;color:'+statusColor+';border:1px solid '+statusColor+'30;padding:3px 10px;border-radius:5px;font-weight:700">'+statusLabel+'</span>'+
-          (t.dueDate?'<span style="font-size:12px;color:#4B5563">Vence: '+fmtDate(t.dueDate)+'</span>':'')+
+          '<span style="font-size:11px;background:'+sc+'18;color:'+sc+';border:1px solid '+sc+'30;padding:3px 10px;border-radius:5px;font-weight:700">'+sl+'</span>'+
         '</div>'+
+        (t.dueDate?'<div style="font-size:12px;color:#4B5563;margin-bottom:10px">📅 Vence: '+fmtDate(t.dueDate)+'</div>':'')+
         '<div class="row" style="gap:8px">'+
           '<button class="btn btn-sm" onclick="viewTaskMonitor(\''+t.id+'\')">📊 Monitor</button>'+
-          '<button class="btn btn-sm btn-danger" onclick="deleteTask(\''+t.id+'\')">✕ Eliminar</button>'+
+          '<button class="btn btn-sm btn-danger" onclick="deleteTask(\''+t.id+'\')">✕</button>'+
         '</div>'+
       '</div>';
     }).join("");
@@ -727,24 +690,26 @@ function openNewTask(){
   var key=emailToKey(STATE.profile.email);
   db.ref("users/"+key+"/subjects").once("value").then(function(snap){
     var subjects=Object.values(snap.val()||{});
-    var subjOpts=subjects.map(function(s){return '<option value="'+s.year+'|'+s.subject+'">'+s.year+' — '+s.subject+'</option>';}).join("");
-    h("task-modal-root",'<div class="overlay" onclick="closeModal()">'+
+    var subjOpts=subjects.length>0
+      ?subjects.map(function(s){return '<option value="'+s.year+'|'+s.subject+'">'+s.year+' — '+s.subject+'</option>';}).join("")
+      :'<option value="">Sin materias asignadas</option>';
+    h("task-modal-root",'<div class="overlay" onclick="closeTModal()">'+
       '<div class="modal" onclick="event.stopPropagation()">'+
-      '<div class="modal-header"><span class="modal-title">Nueva tarea</span><button class="close-btn" onclick="closeModal()">×</button></div>'+
-      '<div class="modal-body"><div class="col" style="gap:16px">'+
-        '<div><label class="field-label">Título</label><input type="text" id="task-title" placeholder="Ej: Resumen Unidad 2 — Ventilación"></div>'+
-        '<div><label class="field-label">Descripción</label><textarea id="task-desc" rows="3" placeholder="Consigna de la tarea..."></textarea></div>'+
+      '<div class="modal-header"><span class="modal-title">Nueva tarea</span><button class="close-btn" onclick="closeTModal()">×</button></div>'+
+      '<div class="modal-body"><div class="col" style="gap:14px">'+
+        '<div><label class="field-label">Título</label><input type="text" id="task-title" placeholder="Ej: Resumen Unidad 2"></div>'+
+        '<div><label class="field-label">Descripción</label><textarea id="task-desc" rows="3" placeholder="Consigna..."></textarea></div>'+
         '<div><label class="field-label">Grupo / Materia</label><select id="task-group">'+subjOpts+'</select></div>'+
         '<div><label class="field-label">Fecha de entrega</label><input type="datetime-local" id="task-due" style="color:#F0EDE8"></div>'+
         '<div class="modal-footer">'+
-          '<button class="btn" onclick="closeModal()">Cancelar</button>'+
+          '<button class="btn" onclick="closeTModal()">Cancelar</button>'+
           '<button class="btn btn-primary" onclick="saveTask()">Crear tarea</button>'+
         '</div>'+
       '</div></div></div></div>');
-    function closeModal(){h("task-modal-root","");}
-    window.closeModal=closeModal;
   });
 }
+
+function closeTModal(){h("task-modal-root","");}
 
 function saveTask(){
   var title=g("task-title").value.trim();
@@ -752,19 +717,16 @@ function saveTask(){
   var group=g("task-group").value;
   var due=g("task-due").value;
   if(!title){toast("Ingresá un título","err");return;}
-  if(!group){toast("Seleccioná un grupo","err");return;}
+  if(!group||group.indexOf("|")<0){toast("Seleccioná un grupo","err");return;}
   var parts=group.split("|");
   var key=emailToKey(STATE.profile.email);
-  var task={
-    title:title,description:desc,
-    year:parts[0],subject:parts[1],
+  db.ref("tasks").push({
+    title:title,description:desc,year:parts[0],subject:parts[1],
     teacherKey:key,teacherName:STATE.profile.name,
     dueDate:due?new Date(due).getTime():null,
-    createdAt:Date.now(),status:"active",
-    submissions:{}
-  };
-  db.ref("tasks").push(task).then(function(){
-    closeModal();toast("Tarea creada exitosamente");loadTeacherTasks();
+    createdAt:Date.now(),status:"active",submissions:{}
+  }).then(function(){
+    closeTModal();toast("Tarea creada");loadTeacherTasks();
   });
 }
 
@@ -776,13 +738,12 @@ function deleteTask(id){
 function viewTaskMonitor(taskId){
   db.ref("tasks/"+taskId).once("value").then(function(snap){
     var task=snap.val();if(!task)return;
-    // Load students in that year
     db.ref("users").once("value").then(function(usnap){
       var students=Object.values(usnap.val()||{}).filter(function(u){return u.role==="student"&&u.year===task.year;});
       var subs=task.submissions||{};
       var delivered=students.filter(function(s){return subs[emailToKey(s.email)];}).length;
       h("modal-root",'<div class="overlay" onclick="closeModal()">'+
-        '<div class="modal" style="max-width:620px" onclick="event.stopPropagation()">'+
+        '<div class="modal" onclick="event.stopPropagation()">'+
         '<div class="modal-header"><span class="modal-title">Monitor: '+task.title+'</span><button class="close-btn" onclick="closeModal()">×</button></div>'+
         '<div class="modal-body">'+
         '<div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px">'+
@@ -790,20 +751,16 @@ function viewTaskMonitor(taskId){
           '<div class="stat-card"><div class="stat-val" style="color:#EF4444">'+(students.length-delivered)+'</div><div class="stat-lbl">Pendiente</div></div>'+
           '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+students.length+'</div><div class="stat-lbl">Total</div></div>'+
         '</div>'+
-        '<div style="display:flex;flex-direction:column;gap:7px">'+
         students.map(function(s){
           var sub=subs[emailToKey(s.email)];
           return '<div class="task-row">'+
             avHtml(s.name,30)+
             '<span style="flex:1;font-size:13px;font-weight:600">'+s.name+'</span>'+
-            (sub?
-              '<span style="font-size:11px;color:#10B981">✓ '+fmtDateTime(sub.submittedAt)+'</span>'+
-              '<span style="font-size:11px;background:#10B98120;color:#10B981;padding:2px 8px;border-radius:6px">Entregó</span>':
+            (sub?'<span style="font-size:11px;background:#10B98120;color:#10B981;padding:2px 8px;border-radius:6px">✓ Entregó</span>':
               '<span style="font-size:11px;background:#EF444420;color:#EF4444;padding:2px 8px;border-radius:6px">Pendiente</span>')+
           '</div>';
         }).join("")+
-        (students.length===0?'<p style="color:#374151;text-align:center;padding:20px">No hay alumnos en este año todavía.</p>':'')+
-        '</div>'+
+        (students.length===0?'<p style="color:#374151;text-align:center;padding:20px">No hay alumnos en este año.</p>':'')+
         '<div class="modal-footer"><button class="btn" onclick="closeModal()">Cerrar</button></div>'+
         '</div></div></div>');
     });
@@ -811,74 +768,43 @@ function viewTaskMonitor(taskId){
 }
 
 function teacherQuiz(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Quiz en Vivo</h1>'+
-    '</div>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz en Vivo</h1></div>'+
     '<div class="card" style="text-align:center;padding:40px">'+
     '<div style="font-size:48px;margin-bottom:16px">⚡</div>'+
-    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:20px">El sistema de Quiz en Vivo está disponible.<br>Creá una sala y compartí el código con tus alumnos.</p>'+
-    '<button class="btn btn-primary btn-lg" onclick="toast(\'Función Quiz en Vivo — próximamente integrada al nuevo sistema\',\'info\')">Crear sala de quiz</button>'+
+    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:20px">Creá una sala y compartí el código con tus alumnos.</p>'+
+    '<button class="btn btn-primary btn-lg" onclick="toast(\'Próximamente\',\'info\')">Crear sala de quiz</button>'+
     '</div>';
 }
 
 function teacherResults(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Resultados</h1>'+
-    '</div>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Resultados</h1></div>'+
     '<div class="card" style="text-align:center;padding:40px;color:#374151">'+
-    '<p style="font-size:14px">Los resultados de tareas y quizzes aparecerán acá.<br>Creá una tarea primero para ver estadísticas.</p>'+
-    '</div>';
+    '<p style="font-size:14px">Los resultados aparecerán acá cuando los alumnos entreguen tareas.</p></div>';
 }
 
 // ══════════════════════════════════════════════════
-// STUDENT PANEL
+// STUDENT
 // ══════════════════════════════════════════════════
 function renderStudent(){
-  // Check if student has selected their year
-  if(!STATE.profile.year){
-    renderStudentYearSelect();
-    return;
-  }
-
+  if(!STATE.profile.year){renderStudentYearSelect();return;}
   var tabs=[
     {id:"dashboard",icon:"🏠",label:"Inicio"},
-    {id:"tasks",icon:"📋",label:"Mis Tareas"},
+    {id:"tasks",icon:"📋",label:"Tareas"},
     {id:"quiz",icon:"⚡",label:"Quiz"},
     {id:"ranking",icon:"🏆",label:"Ranking"},
-    {id:"profile",icon:"👤",label:"Mi Perfil"},
+    {id:"profile",icon:"👤",label:"Perfil"},
   ];
-  var navHtml=tabs.map(function(t){
-    return '<div class="nav-item'+(STATE.tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+
-      '<span style="font-size:16px">'+t.icon+'</span><span class="nav-label">'+t.label+'</span></div>';
-  }).join("");
-
   g("app").innerHTML=
-    '<div class="sidebar">'+
-      '<div style="padding:16px 16px 12px;border-bottom:1px solid #1E2333">'+
-        '<div style="font-family:\'Rajdhani\',sans-serif;font-size:18px;font-weight:700">TECNI<span style="color:#F97316">QUIZ</span></div>'+
-        '<div style="font-size:9px;color:#374151;letter-spacing:1.5px;font-family:\'JetBrains Mono\',monospace;margin-top:2px">EET N°23 · '+STATE.profile.year+'</div>'+
-      '</div>'+
-      '<div class="nav-section nav-label">MENÚ</div>'+
-      navHtml+
-      '<div style="margin-top:auto;border-top:1px solid #1E2333;padding:12px 16px" class="sb-user">'+
-        '<div class="row" style="gap:10px">'+
-          avHtml(STATE.profile.name,32)+
-          '<div style="min-width:0">'+
-            '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+STATE.profile.name+'</div>'+
-            '<div class="pts-badge" style="font-size:10px;padding:2px 8px;margin-top:2px">⭐ '+(STATE.profile.points||0)+' pts</div>'+
-          '</div>'+
-          '<button onclick="logout()" style="background:none;border:none;color:#374151;cursor:pointer;font-size:18px;margin-left:auto" title="Salir">⏏</button>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+    buildSidebar(tabs,'<div class="pts-badge" style="font-size:10px;padding:2px 8px;margin-top:2px">⭐ '+(STATE.profile.points||0)+' pts</div>')+
+    buildMobileHeader(STATE.profile.year+' · EET N°23')+
+    buildBottomNav(tabs)+
     '<div class="main-content" id="main-panel"></div>';
-
-  renderStudentTab();
+  setTimeout(renderStudentTab,50);
 }
 
 function renderStudentYearSelect(){
   g("app").innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">'+
-    '<div class="card pop" style="max-width:480px;width:100%;text-align:center;padding:36px">'+
+    '<div class="card pop" style="max-width:480px;width:100%;text-align:center;padding:32px">'+
     '<div style="font-size:44px;margin-bottom:14px">🎓</div>'+
     '<h2 style="font-family:\'Rajdhani\',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px">¡Bienvenido, '+STATE.profile.name.split(" ")[0]+'!</h2>'+
     '<p style="color:#4B5563;font-size:14px;margin-bottom:24px">¿En qué año estás cursando la carrera de MMO?</p>'+
@@ -886,30 +812,22 @@ function renderStudentYearSelect(){
     YEARS.map(function(yr,i){
       var cols=["#F97316","#10B981","#F59E0B","#A78BFA","#38BDF8","#EC4899","#34D399"];
       var c=cols[i%cols.length];
-      return '<button onclick="selectYear(\''+yr+'\')" style="padding:16px;border-radius:10px;border:1px solid '+c+'30;background:'+c+'12;color:'+c+';font-weight:700;font-size:14px;cursor:pointer;transition:all .15s" onmouseenter="this.style.background=\''+c+'25\'" onmouseleave="this.style.background=\''+c+'12\'">'+yr+'</button>';
+      return '<button onclick="selectYear(\''+yr+'\')" style="padding:16px;border-radius:10px;border:1px solid '+c+'30;background:'+c+'12;color:'+c+';font-weight:700;font-size:14px;cursor:pointer">'+yr+'</button>';
     }).join("")+
     '</div>'+
-    '<button onclick="logout()" style="background:none;border:none;color:#374151;font-size:12px;cursor:pointer;text-decoration:underline">No es mi cuenta — Salir</button>'+
+    '<button onclick="logout()" style="background:none;border:none;color:#374151;font-size:12px;cursor:pointer;text-decoration:underline">Salir</button>'+
     '</div></div>';
 }
 
 function selectYear(yr){
   var key=emailToKey(STATE.profile.email);
   db.ref("users/"+key).update({year:yr}).then(function(){
-    STATE.profile.year=yr;
-    renderStudent();
-    toast("¡Listo! Ahora sos parte de "+yr);
+    STATE.profile.year=yr;renderStudent();toast("¡Listo! Bienvenido a "+yr);
   });
 }
 
 function renderStudentTab(){
-  var fns={
-    "dashboard":studentDashboard,
-    "tasks":studentTasks,
-    "quiz":studentQuiz,
-    "ranking":studentRanking,
-    "profile":studentProfile
-  };
+  var fns={"dashboard":studentDashboard,"tasks":studentTasks,"quiz":studentQuiz,"ranking":studentRanking,"profile":studentProfile};
   h("main-panel","<div class='fu'>"+(fns[STATE.tab]?fns[STATE.tab]():"")+"</div>");
   if(STATE.tab==="tasks") loadStudentTasks();
   if(STATE.tab==="ranking") loadRanking();
@@ -917,8 +835,8 @@ function renderStudentTab(){
 }
 
 function studentDashboard(){
-  return '<div class="row" style="margin-bottom:22px;flex-wrap:wrap;gap:10px">'+
-    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">¡Hola, '+STATE.profile.name.split(" ")[0]+'! 👋</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">¡Hola, '+STATE.profile.name.split(" ")[0]+'! 👋</h1>'+
     '<p style="color:#4B5563;font-size:13px">'+STATE.profile.year+' · EET N°23</p></div>'+
     '<span class="sp"></span>'+
     '<div class="pts-badge">⭐ '+(STATE.profile.points||0).toLocaleString()+' pts</div>'+
@@ -926,69 +844,59 @@ function studentDashboard(){
     '<div class="stat-grid" id="student-stats">'+
     '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
     '<div class="card" id="pending-tasks-card">'+
       '<div class="card-title">Tareas pendientes</div>'+
       '<div id="pending-tasks"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
     '</div>'+
     '<div class="card">'+
       '<div class="card-title">Próximos eventos</div>'+
-      '<div style="display:flex;flex-direction:column;gap:8px">'+
+      '<div style="display:flex;flex-direction:column;gap:10px">'+
       '<div style="background:#F59E0B14;border:1px solid #F59E0B30;border-radius:9px;padding:12px 14px;display:flex;gap:10px;align-items:center">'+
         '<span style="font-size:22px">🏆</span>'+
         '<div><div style="font-size:13px;font-weight:700">Torneo semanal</div>'+
-        '<div style="font-size:12px;color:#F59E0B">Cada viernes · +500 pts extra</div></div>'+
+        '<div style="font-size:12px;color:#F59E0B">Cada viernes · +500 pts</div></div>'+
       '</div>'+
       '<div style="background:#38BDF814;border:1px solid #38BDF830;border-radius:9px;padding:12px 14px;display:flex;gap:10px;align-items:center">'+
         '<span style="font-size:22px">⚡</span>'+
         '<div><div style="font-size:13px;font-weight:700">Quiz en Vivo</div>'+
-        '<div style="font-size:12px;color:#38BDF8">Cuando el docente lo active · Puntos por velocidad</div></div>'+
+        '<div style="font-size:12px;color:#38BDF8">Cuando el docente lo active</div></div>'+
       '</div>'+
       '</div>'+
-    '</div>'+
     '</div>';
 }
 
 function loadStudentDashboard(){
   var key=emailToKey(STATE.profile.email);
-  // Load tasks for this year
   db.ref("tasks").orderByChild("year").equalTo(STATE.profile.year).once("value").then(function(snap){
     var tasks=Object.entries(snap.val()||{}).map(function(e){return Object.assign({id:e[0]},e[1]);});
     var now=Date.now();
     var pending=tasks.filter(function(t){return t.status==="active"&&(!t.submissions||!t.submissions[key]);});
     var done=tasks.filter(function(t){return t.submissions&&t.submissions[key];});
-    var overdue=pending.filter(function(t){return t.dueDate&&t.dueDate<now;});
-
-    var statsEl=g("student-stats");
-    if(statsEl) statsEl.innerHTML=
+    var el=g("student-stats");
+    if(el) el.innerHTML=
       '<div class="stat-card"><div class="stat-val" style="color:#EF4444">'+pending.length+'</div><div class="stat-lbl">Pendientes</div></div>'+
       '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+done.length+'</div><div class="stat-lbl">Completadas</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(STATE.profile.streak||0)+'</div><div class="stat-lbl">Días de racha</div></div>';
-
-    var ptEl=g("pending-tasks");
-    if(!ptEl)return;
+      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(STATE.profile.streak||0)+'</div><div class="stat-lbl">Racha</div></div>';
+    var ptEl=g("pending-tasks");if(!ptEl)return;
     if(pending.length===0){
-      ptEl.innerHTML='<div style="text-align:center;padding:20px;color:#10B981"><span style="font-size:28px">✅</span><br><span style="font-size:13px">¡Todo al día! Sin tareas pendientes.</span></div>';
+      ptEl.innerHTML='<div style="text-align:center;padding:20px;color:#10B981"><span style="font-size:28px">✅</span><br><span style="font-size:13px">¡Todo al día!</span></div>';
     } else {
       ptEl.innerHTML=pending.slice(0,4).map(function(t){
         var isOverdue=t.dueDate&&t.dueDate<now;
-        return '<div class="task-row" style="cursor:pointer" onclick="setTab(\'tasks\')">'+
+        return '<div class="task-row" onclick="setTab(\'tasks\')" style="cursor:pointer">'+
           '<span style="font-size:20px">'+(isOverdue?"🔴":"🟡")+'</span>'+
           '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+t.title+'</div>'+
           '<div style="font-size:11px;color:'+(isOverdue?"#EF4444":"#4B5563")+'">'+(t.dueDate?("Vence: "+fmtDate(t.dueDate)):"Sin fecha límite")+'</div></div>'+
           '<span style="color:#374151">›</span>'+
         '</div>';
       }).join("")+
-      (pending.length>4?'<div style="text-align:center;margin-top:8px"><button class="btn btn-sm" onclick="setTab(\'tasks\')">Ver todas ('+pending.length+')</button></div>':'');
+      (pending.length>4?'<div style="text-align:center;margin-top:8px"><button class="btn btn-sm btn-full" onclick="setTab(\'tasks\')">Ver todas ('+pending.length+')</button></div>':'');
     }
   });
 }
 
 function studentTasks(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Mis Tareas</h1>'+
-    '<span class="sp"></span>'+
-    '</div>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Tareas</h1></div>'+
     '<div id="student-tasks-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
 }
 
@@ -999,26 +907,25 @@ function loadStudentTasks(){
     tasks.sort(function(a,b){return(b.dueDate||0)-(a.dueDate||0);});
     var el=g("student-tasks-list");if(!el)return;
     if(tasks.length===0){
-      el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:#374151">No hay tareas asignadas para tu curso todavía.</div>';
-      return;
+      el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:#374151">No hay tareas para tu curso todavía.</div>';return;
     }
     var now=Date.now();
     el.innerHTML=tasks.map(function(t){
       var submitted=t.submissions&&t.submissions[key];
       var isOverdue=t.dueDate&&t.dueDate<now&&!submitted;
-      var statusColor=submitted?"#10B981":isOverdue?"#EF4444":"#F59E0B";
-      var statusLabel=submitted?"✅ Entregado":isOverdue?"❌ Vencida":"⏳ Pendiente";
+      var sc=submitted?"#10B981":isOverdue?"#EF4444":"#F59E0B";
+      var sl=submitted?"✅ Entregado":isOverdue?"❌ Vencida":"⏳ Pendiente";
       return '<div class="card">'+
-        '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">'+
-          '<div style="flex:1"><div style="font-size:16px;font-weight:700">'+t.title+'</div>'+
+        '<div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:6px">'+
+          '<div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">'+t.title+'</div>'+
           '<div style="font-size:12px;color:#4B5563">'+t.subject+' · '+t.teacherName+'</div></div>'+
-          '<span style="font-size:11px;background:'+statusColor+'18;color:'+statusColor+';border:1px solid '+statusColor+'30;padding:3px 10px;border-radius:5px;font-weight:700">'+statusLabel+'</span>'+
+          '<span style="font-size:11px;background:'+sc+'18;color:'+sc+';border:1px solid '+sc+'30;padding:3px 10px;border-radius:5px;font-weight:700">'+sl+'</span>'+
         '</div>'+
-        (t.description?'<p style="font-size:13px;color:#9CA3AF;margin-bottom:12px">'+t.description+'</p>':'')+
+        (t.description?'<p style="font-size:13px;color:#9CA3AF;margin-bottom:10px">'+t.description+'</p>':'')+
         '<div class="row" style="flex-wrap:wrap;gap:8px">'+
-          (t.dueDate?'<span style="font-size:12px;color:#4B5563">📅 Vence: '+fmtDateTime(t.dueDate)+'</span>':'')+
+          (t.dueDate?'<span style="font-size:12px;color:#4B5563">📅 '+fmtDateTime(t.dueDate)+'</span>':'')+
           '<span class="sp"></span>'+
-          (!submitted?'<button class="btn btn-primary btn-sm" onclick="submitTask(\''+t.id+'\')">✓ Marcar como entregada</button>':'<span style="font-size:12px;color:#10B981">Entregado el '+fmtDateTime(t.submissions[key].submittedAt)+'</span>')+
+          (!submitted?'<button class="btn btn-primary btn-sm" onclick="submitTask(\''+t.id+'\')">✓ Entregar</button>':'<span style="font-size:12px;color:#10B981">Entregado '+fmtDateTime(t.submissions[key].submittedAt)+'</span>')+
         '</div>'+
       '</div>';
     }).join("");
@@ -1032,35 +939,29 @@ function submitTask(taskId){
     var task=snap.val();if(!task)return;
     var onTime=!task.dueDate||task.dueDate>=now;
     var pts=onTime?300:100;
-    db.ref("tasks/"+taskId+"/submissions/"+key).set({
-      submittedAt:now,onTime:onTime,studentName:STATE.profile.name
-    });
-    // Add points
+    db.ref("tasks/"+taskId+"/submissions/"+key).set({submittedAt:now,onTime:onTime,studentName:STATE.profile.name});
     var newPts=(STATE.profile.points||0)+pts;
     STATE.profile.points=newPts;
     db.ref("users/"+key).update({points:newPts});
-    toast("¡Tarea entregada! +"+(onTime?"300":"100")+" pts "+(onTime?"(a tiempo 🎉)":"(con retraso)"));
+    toast("¡Entregada! +"+(onTime?"300":"100")+" pts "+(onTime?"🎉":""));
     loadStudentTasks();
   });
 }
 
 function studentQuiz(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Quiz</h1>'+
-    '</div>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz</h1></div>'+
     '<div class="card" style="text-align:center;padding:40px">'+
     '<div style="font-size:48px;margin-bottom:16px">⚡</div>'+
-    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:8px">Para entrar a un quiz en vivo, ingresá el código que te da tu docente.</p>'+
-    '<p style="font-size:13px;color:#374151;margin-bottom:24px">También podés practicar solo cuando quieras.</p>'+
-    '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">'+
-    '<button class="btn btn-primary btn-lg" onclick="toast(\'Próximamente: unirse con código\',\'info\')">Ingresar con código</button>'+
-    '<button class="btn btn-lg" onclick="toast(\'Próximamente: modo práctica libre\',\'info\')">Practicar solo</button>'+
+    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:8px">Ingresá el código que te da tu docente para unirte al quiz.</p>'+
+    '<div style="display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto">'+
+    '<button class="btn btn-primary btn-full btn-lg" onclick="toast(\'Próximamente: ingresar con código\',\'info\')">Ingresar con código</button>'+
+    '<button class="btn btn-full" onclick="toast(\'Próximamente: modo práctica\',\'info\')">Practicar solo</button>'+
     '</div></div>';
 }
 
 function studentRanking(){
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Ranking</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Ranking</h1>'+
     '<span class="sp"></span>'+
     '<span class="tag tag-gold">'+new Date().toLocaleString("es-AR",{month:"long",year:"numeric"}).toUpperCase()+'</span>'+
     '</div>'+
@@ -1069,41 +970,35 @@ function studentRanking(){
 
 function studentProfile(){
   var p=STATE.profile;
-  return '<div class="row" style="margin-bottom:22px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700">Mi Perfil</h1>'+
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mi Perfil</h1></div>'+
+    '<div class="card" style="text-align:center;padding:24px">'+
+      avHtml(p.name,64,"margin:0 auto 12px")+
+      '<div style="font-size:18px;font-weight:700;margin-bottom:4px">'+p.name+'</div>'+
+      '<div style="font-size:13px;color:#4B5563;margin-bottom:10px">'+p.email+'</div>'+
+      '<span class="tag tag-student">ALUMNO</span>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+    '<div class="stat-grid" style="grid-template-columns:1fr 1fr">'+
+      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(p.points||0).toLocaleString()+'</div><div class="stat-lbl">Puntos</div></div>'+
+      '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+(p.streak||0)+'</div><div class="stat-lbl">Racha días</div></div>'+
+    '</div>'+
     '<div class="card">'+
-      '<div style="text-align:center;padding:20px 0 14px">'+
-        avHtml(p.name,64,"margin:0 auto 12px")+
-        '<div style="font-size:18px;font-weight:700;margin-bottom:4px">'+p.name+'</div>'+
-        '<div style="font-size:13px;color:#4B5563;margin-bottom:10px">'+p.email+'</div>'+
-        '<span class="tag tag-student">ALUMNO</span>'+
-      '</div>'+
-      '<div style="border-top:1px solid #1E2333;padding-top:14px;display:flex;flex-direction:column;gap:8px">'+
+      '<div class="card-title">Información</div>'+
+      '<div style="display:flex;flex-direction:column;gap:10px">'+
         '<div class="row"><span style="color:#4B5563;font-size:13px;flex:1">Año</span><span style="font-size:13px;font-weight:700">'+p.year+'</span></div>'+
         '<div class="row"><span style="color:#4B5563;font-size:13px;flex:1">Miembro desde</span><span style="font-size:13px">'+fmtDate(p.createdAt)+'</span></div>'+
-        '<div class="row"><span style="color:#4B5563;font-size:13px;flex:1">Último acceso</span><span style="font-size:13px">'+fmtDate(p.lastLogin)+'</span></div>'+
       '</div>'+
     '</div>'+
     '<div class="card">'+
-      '<div class="card-title">Mis estadísticas</div>'+
-      '<div class="stat-grid" style="grid-template-columns:1fr 1fr">'+
-        '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(p.points||0).toLocaleString()+'</div><div class="stat-lbl">Puntos totales</div></div>'+
-        '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+(p.streak||0)+'</div><div class="stat-lbl">Días de racha</div></div>'+
-      '</div>'+
-      '<div class="card-title" style="margin-top:16px">Cambiar año</div>'+
+      '<div class="card-title">Cambiar año</div>'+
       '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
       YEARS.map(function(yr){
         var isActive=yr===p.year;
-        return '<button onclick="selectYear(\''+yr+'\')" style="padding:6px 12px;border-radius:7px;border:1px solid '+(isActive?"#F97316":"#1E2333")+';background:'+(isActive?"#F9731618":"#11141C")+';color:'+(isActive?"#F97316":"#6B7280")+';font-size:12px;font-weight:700;cursor:pointer">'+yr+'</button>';
+        return '<button onclick="selectYear(\''+yr+'\')" style="padding:8px 12px;border-radius:7px;border:1px solid '+(isActive?"#F97316":"#1E2333")+';background:'+(isActive?"#F9731618":"#11141C")+';color:'+(isActive?"#F97316":"#6B7280")+';font-size:12px;font-weight:700;cursor:pointer">'+yr+'</button>';
       }).join("")+
       '</div>'+
-    '</div>'+
     '</div>';
 }
 
-// ── Init ───────────────────────────────────────
 render();
 </script>
 </body>
