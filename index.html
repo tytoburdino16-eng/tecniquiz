@@ -874,14 +874,7 @@ function viewTaskMonitor(taskId){
   });
 }
 
-function teacherQuiz(){
-  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz en Vivo</h1></div>'+
-    '<div class="card" style="text-align:center;padding:40px">'+
-    '<div style="font-size:48px;margin-bottom:16px">⚡</div>'+
-    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:20px">Creá una sala y compartí el código con tus alumnos.</p>'+
-    '<button class="btn btn-primary btn-lg" onclick="toast(\'Próximamente\',\'info\')">Crear sala de quiz</button>'+
-    '</div>';
-}
+// teacherQuiz defined in quiz module below
 
 function teacherResults(){
   return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Resultados</h1></div>'+
@@ -1055,16 +1048,7 @@ function submitTask(taskId){
   });
 }
 
-function studentQuiz(){
-  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz</h1></div>'+
-    '<div class="card" style="text-align:center;padding:40px">'+
-    '<div style="font-size:48px;margin-bottom:16px">⚡</div>'+
-    '<p style="font-size:15px;color:#9CA3AF;margin-bottom:8px">Ingresá el código que te da tu docente para unirte al quiz.</p>'+
-    '<div style="display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto">'+
-    '<button class="btn btn-primary btn-full btn-lg" onclick="toast(\'Próximamente: ingresar con código\',\'info\')">Ingresar con código</button>'+
-    '<button class="btn btn-full" onclick="toast(\'Próximamente: modo práctica\',\'info\')">Practicar solo</button>'+
-    '</div></div>';
-}
+// studentQuiz defined in quiz module below
 
 function studentRanking(){
   return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
@@ -1105,6 +1089,552 @@ function studentProfile(){
       '</div>'+
     '</div>';
 }
+
+
+// ══════════════════════════════════════════════════
+// QUIZ EN VIVO — MÓDULO COMPLETO
+// ══════════════════════════════════════════════════
+
+// ── Banco de preguntas por materia ─────────────────
+var QUESTION_BANK = {
+  "Instalaciones Térmicas": [
+    {q:"¿Qué significa HR en psicrometría?",opts:["Humedad Relativa","Humedad Real","Humedad Residual","Humedad Regulada"],a:0},
+    {q:"¿Cuál es la temperatura de confort térmico según IRAM?",opts:["18-20°C","20-26°C","15-18°C","26-30°C"],a:1},
+    {q:"¿Qué es el coeficiente K de transmitancia?",opts:["Pérdida de calor por m²·°C","Ganancia solar","Caudal de aire","Presión de vapor"],a:0},
+    {q:"¿Qué norma regula instalaciones de gas en Argentina?",opts:["NAG 100","NAG 200","IRAM 11601","AEA 90364"],a:1},
+    {q:"¿VMC significa?",opts:["Ventilación Mecánica Controlada","Válvula de Máxima Capacidad","Velocidad Media de Circulación","Volumen Máximo de Calor"],a:0},
+    {q:"¿Qué es el punto de rocío?",opts:["T° a la que el vapor condensa","Presión mínima del sistema","Humedad máxima posible","Temperatura de evaporación"],a:0},
+    {q:"¿Qué tipo de calefacción usa agua caliente como fluido?",opts:["Calefacción radiante","Calefacción por radiadores","Calefacción por aire forzado","Calefacción eléctrica"],a:1},
+    {q:"¿Cuánto es 1 kcal en Joules?",opts:["4186 J","1000 J","2500 J","3600 J"],a:0},
+    {q:"¿Qué es el balance térmico?",opts:["Equilibrio entre ganancias y pérdidas de calor","Temperatura promedio anual","Diferencia de presiones","Caudal de ventilación"],a:0},
+    {q:"¿La norma IRAM 11605 regula?",opts:["Acondicionamiento térmico de edificios","Instalaciones de gas","Ventilación industrial","Calefacción central"],a:0},
+  ],
+  "Instalaciones Electromecánicas": [
+    {q:"¿Cuál es la tensión de red monofásica en Argentina?",opts:["110V","127V","220V","380V"],a:2},
+    {q:"¿Qué es la acometida eléctrica?",opts:["Conexión entre red pública y instalación","Tablero principal","Puesta a tierra","Medidor de energía"],a:0},
+    {q:"¿Qué norma regula instalaciones eléctricas en Argentina?",opts:["AEA 90364","NAG 200","IRAM 2244","IEC 60364"],a:0},
+    {q:"Según Ley de Ohm, V = ?",opts:["I × R","I / R","R / I","I + R"],a:0},
+    {q:"¿Qué color identifica al conductor de tierra en instalaciones?",opts:["Verde-amarillo","Azul","Negro","Rojo"],a:0},
+    {q:"¿Qué protege un disyuntor diferencial?",opts:["Personas contra electrocución","Equipos contra cortocircuito","Motores contra sobrecarga","Cables contra calentamiento"],a:0},
+    {q:"¿Qué es la potencia activa?",opts:["Potencia que realiza trabajo útil","Potencia reactiva del sistema","Potencia aparente total","Potencia de pérdidas"],a:0},
+    {q:"La tensión trifásica de línea en Argentina es:",opts:["220V","380V","440V","110V"],a:1},
+    {q:"¿Qué es un tablero seccional?",opts:["Tablero secundario que alimenta circuitos parciales","Tablero principal de medición","Protección general del edificio","Caja de empalmes"],a:0},
+    {q:"¿Cuántos watts consume una lámpara de 220V y 2A?",opts:["440W","110W","220W","880W"],a:0},
+  ],
+  "Construcciones": [
+    {q:"¿Qué es un cimiento?",opts:["Elemento que transfiere cargas al suelo","Viga horizontal","Columna de hormigón","Muro de contención"],a:0},
+    {q:"¿Qué relación agua/cemento mejora la resistencia del hormigón?",opts:["Menor relación, mayor resistencia","Mayor relación, mayor resistencia","No influye","Igual relación siempre"],a:0},
+    {q:"¿Qué es el slump test?",opts:["Medición de consistencia del hormigón","Ensayo de resistencia","Prueba de impermeabilidad","Test de durabilidad"],a:0},
+    {q:"¿Para qué sirve la armadura en el hormigón armado?",opts:["Resistir tensiones de tracción","Aumentar compresión","Reducir peso","Mejorar aislación"],a:0},
+    {q:"¿Qué es un dintel?",opts:["Elemento sobre vano que distribuye cargas","Base de columna","Unión entre muros","Remate de cubierta"],a:0},
+  ],
+  "Matemática": [
+    {q:"¿Cuánto es sen(90°)?",opts:["0","1","-1","0.5"],a:1},
+    {q:"¿Cuánto es la derivada de x²?",opts:["2x","x","x²","2"],a:0},
+    {q:"¿Qué es una función inyectiva?",opts:["Cada elemento del dominio tiene imagen única","Función constante","Función periódica","Función discontinua"],a:0},
+    {q:"¿Cuánto es log₁₀(100)?",opts:["1","2","10","0.1"],a:1},
+    {q:"¿Cuánto es cos(0°)?",opts:["0","1","-1","0.5"],a:1},
+  ],
+};
+
+// Preguntas genéricas para materias sin banco específico
+var GENERIC_QUESTIONS = [
+  {q:"¿Cuál es la unidad de medida de la fuerza en el SI?",opts:["Newton","Joule","Pascal","Watt"],a:0},
+  {q:"¿Qué es la densidad?",opts:["Masa por unidad de volumen","Volumen por unidad de masa","Fuerza por unidad de área","Energía por unidad de tiempo"],a:0},
+  {q:"¿Cuántos grados tiene un triángulo?",opts:["90°","270°","180°","360°"],a:2},
+  {q:"¿Qué es un vector?",opts:["Magnitud con dirección y sentido","Solo magnitud","Solo dirección","Ángulo de rotación"],a:0},
+  {q:"¿Cuál es la fórmula del área del círculo?",opts:["π·r²","2·π·r","π·d","r²"],a:0},
+  {q:"¿Qué es la presión atmosférica estándar?",opts:["101325 Pa","100000 Pa","98000 Pa","760 Pa"],a:0},
+  {q:"¿Cuánto es 1 kW en watts?",opts:["100W","1000W","10000W","10W"],a:1},
+  {q:"¿Qué es la energía cinética?",opts:["Energía del movimiento","Energía almacenada","Energía eléctrica","Energía térmica"],a:0},
+  {q:"¿Cuál es la velocidad de la luz en el vacío?",opts:["3×10⁸ m/s","3×10⁶ m/s","3×10¹⁰ m/s","3×10⁴ m/s"],a:0},
+  {q:"¿Qué es la resistencia eléctrica?",opts:["Oposición al flujo de corriente","Flujo de electrones","Diferencia de potencial","Potencia consumida"],a:0},
+];
+
+function getQuestions(materia, count){
+  var pool = QUESTION_BANK[materia] || GENERIC_QUESTIONS;
+  var shuffled = pool.slice().sort(function(){return Math.random()-.5;});
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function genCode(){
+  var letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  var digits = '0123456789';
+  var code = '';
+  for(var i=0;i<3;i++) code += letters[Math.floor(Math.random()*letters.length)];
+  code += '-';
+  for(var i=0;i<3;i++) code += digits[Math.floor(Math.random()*digits.length)];
+  return code;
+}
+
+// ── ESTADO DEL QUIZ ───────────────────────────────
+var QUIZ = {
+  salaRef: null,
+  codigo: null,
+  unsubscribe: null,
+  timer: null,
+  tiempoRespuesta: null,
+};
+
+// ══════════════════════════════════════════════════
+// PANEL DOCENTE — QUIZ EN VIVO
+// ══════════════════════════════════════════════════
+function teacherQuiz(){
+  var key = emailToKey(STATE.profile.email);
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz en Vivo</h1>'+
+    '</div>'+
+    '<div id="quiz-teacher-panel">'+
+      '<div class="card" style="text-align:center;padding:36px">'+
+        '<div style="font-size:44px;margin-bottom:14px">⚡</div>'+
+        '<p style="font-size:15px;color:#9CA3AF;margin-bottom:6px">Creá una sala y compartí el código con tus alumnos.</p>'+
+        '<p style="font-size:13px;color:#374151;margin-bottom:24px">Ellos entran desde el panel Quiz con ese código.</p>'+
+        '<button class="btn btn-primary btn-lg" onclick="teacherOpenCreateSala()">＋ Crear sala de quiz</button>'+
+      '</div>'+
+      '<div id="mis-salas-activas"></div>'+
+    '</div>'+
+    '<div id="quiz-modal-root"></div>';
+}
+
+function teacherOpenCreateSala(){
+  var key = emailToKey(STATE.profile.email);
+  db.ref('users/'+key+'/subjects').once('value').then(function(snap){
+    var subjects = Object.values(snap.val()||{});
+    var opts = subjects.length > 0
+      ? subjects.map(function(s){return '<option value="'+s.subject+'">'+s.year+' — '+s.subject+'</option>';}).join('')
+      : '<option value="General">General</option>';
+    h('quiz-modal-root',
+      '<div class="overlay" onclick="closeQModal()">'+
+      '<div class="modal" onclick="event.stopPropagation()">'+
+        '<div class="modal-header"><span class="modal-title">Nueva sala de Quiz</span><button class="close-btn" onclick="closeQModal()">×</button></div>'+
+        '<div class="modal-body"><div class="col" style="gap:16px">'+
+          '<div><label class="field-label">Materia</label><select id="qs-materia">'+opts+'</select></div>'+
+          '<div><label class="field-label">Cantidad de preguntas</label>'+
+            '<select id="qs-count"><option value="5">5 preguntas</option><option value="10" selected>10 preguntas</option><option value="15">15 preguntas</option><option value="20">20 preguntas</option></select>'+
+          '</div>'+
+          '<div><label class="field-label">Tiempo por pregunta</label>'+
+            '<select id="qs-timer"><option value="10">10 segundos</option><option value="15">15 segundos</option><option value="20" selected>20 segundos</option><option value="30">30 segundos</option></select>'+
+          '</div>'+
+          '<div class="modal-footer">'+
+            '<button class="btn" onclick="closeQModal()">Cancelar</button>'+
+            '<button class="btn btn-primary" onclick="teacherCrearSala()">Crear sala ⚡</button>'+
+          '</div>'+
+        '</div></div>'+
+      '</div></div>'
+    );
+  });
+}
+
+function closeQModal(){h('quiz-modal-root','');}
+
+function teacherCrearSala(){
+  var materia = g('qs-materia') ? g('qs-materia').value : 'General';
+  var count = parseInt(g('qs-count').value || 10);
+  var timerSeg = parseInt(g('qs-timer').value || 20);
+  var codigo = genCode();
+  var preguntas = getQuestions(materia, count);
+  var key = emailToKey(STATE.profile.email);
+
+  var sala = {
+    codigo: codigo,
+    materia: materia,
+    docente: STATE.profile.name,
+    docenteKey: key,
+    estado: 'waiting',
+    preguntaActual: -1,
+    timerSeg: timerSeg,
+    preguntas: preguntas,
+    creadaEn: Date.now(),
+    jugadores: {},
+    respuestas: {},
+  };
+
+  db.ref('salas/'+codigo).set(sala).then(function(){
+    closeQModal();
+    toast('Sala '+codigo+' creada');
+    teacherMonitorSala(codigo);
+  });
+}
+
+function teacherMonitorSala(codigo){
+  var panel = g('quiz-teacher-panel');
+  if(!panel) return;
+
+  panel.innerHTML =
+    '<div class="card">'+
+      '<div class="row" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">'+
+        '<div>'+
+          '<div style="font-family:\'Rajdhani\',sans-serif;font-size:20px;font-weight:700">Sala activa</div>'+
+          '<div style="font-size:13px;color:#4B5563" id="sala-materia-label">Cargando...</div>'+
+        '</div>'+
+        '<span class="sp"></span>'+
+        '<div style="background:#11141C;border:1px solid #F97316;border-radius:10px;padding:8px 20px;text-align:center">'+
+          '<div style="font-size:10px;color:#4B5563;letter-spacing:1px;font-family:monospace">CÓDIGO</div>'+
+          '<div style="font-family:\'Rajdhani\',sans-serif;font-size:28px;font-weight:700;color:#F97316;letter-spacing:2px">'+codigo+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">'+
+        '<div class="stat-card"><div class="stat-val" style="color:#10B981" id="sala-jugadores">0</div><div class="stat-lbl">En sala</div></div>'+
+        '<div class="stat-card"><div class="stat-val" style="color:#F97316" id="sala-pregunta">—</div><div class="stat-lbl">Pregunta</div></div>'+
+        '<div class="stat-card"><div class="stat-val" style="color:#38BDF8" id="sala-respuestas">0</div><div class="stat-lbl">Respondieron</div></div>'+
+      '</div>'+
+      '<div id="sala-jugadores-lista" style="margin-bottom:14px"></div>'+
+      '<div class="row" style="gap:10px;flex-wrap:wrap">'+
+        '<button class="btn btn-primary" id="btn-iniciar" onclick="teacherIniciarQuiz(\''+codigo+'\')">▶ Iniciar quiz</button>'+
+        '<button class="btn" id="btn-siguiente" onclick="teacherSiguientePregunta(\''+codigo+'\')" style="display:none">→ Siguiente pregunta</button>'+
+        '<button class="btn btn-danger" onclick="teacherCerrarSala(\''+codigo+'\')">✕ Cerrar sala</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="quiz-pregunta-preview" class="card" style="display:none"></div>';
+
+  // Escuchar sala en tiempo real
+  if(QUIZ.salaRef) QUIZ.salaRef.off();
+  QUIZ.salaRef = db.ref('salas/'+codigo);
+  QUIZ.codigo = codigo;
+
+  QUIZ.salaRef.on('value', function(snap){
+    var sala = snap.val();
+    if(!sala) return;
+    var jugadores = Object.values(sala.jugadores||{});
+    var respuestas = sala.respuestas && sala.preguntaActual >= 0
+      ? Object.keys(sala.respuestas['p'+sala.preguntaActual]||{}).length : 0;
+
+    h('sala-materia-label', sala.materia+' · '+sala.preguntas.length+' preguntas · '+sala.timerSeg+'s por pregunta');
+    h('sala-jugadores', jugadores.length);
+    h('sala-pregunta', sala.preguntaActual >= 0 ? (sala.preguntaActual+1)+'/'+sala.preguntas.length : '—');
+    h('sala-respuestas', respuestas);
+
+    // Lista de jugadores
+    h('sala-jugadores-lista',
+      jugadores.length === 0
+        ? '<p style="font-size:13px;color:#374151;text-align:center">Esperando jugadores...</p>'
+        : '<div style="display:flex;flex-wrap:wrap;gap:7px">'+
+          jugadores.map(function(j){
+            return '<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#11141C;border-radius:8px;border:1px solid #1E2333;font-size:12px">'+
+              avHtml(j.nombre,22)+'<span>'+j.nombre+'</span>'+
+              '<span style="color:#F97316;font-weight:700">'+( j.pts||0)+' pts</span>'+
+            '</div>';
+          }).join('')+
+          '</div>'
+    );
+
+    // Mostrar pregunta actual para el docente
+    if(sala.estado === 'playing' && sala.preguntaActual >= 0){
+      var pq = sala.preguntas[sala.preguntaActual];
+      if(pq){
+        var preview = g('quiz-pregunta-preview');
+        if(preview){
+          preview.style.display='block';
+          preview.innerHTML =
+            '<div class="card-title">Pregunta '+(sala.preguntaActual+1)+' de '+sala.preguntas.length+'</div>'+
+            '<div style="font-size:16px;font-weight:700;margin-bottom:12px">'+pq.q+'</div>'+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+            pq.opts.map(function(op,i){
+              var correct = i === pq.a;
+              return '<div style="padding:10px 14px;border-radius:8px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98118':'#11141C')+';font-size:13px;font-weight:'+(correct?'700':'400')+';color:'+(correct?'#10B981':'#9CA3AF')+'">'+
+                ['A','B','C','D'][i]+'. '+op+'</div>';
+            }).join('')+
+            '</div>';
+        }
+        // Mostrar btn siguiente, ocultar iniciar
+        var bi = g('btn-iniciar'), bs = g('btn-siguiente');
+        if(bi) bi.style.display='none';
+        if(bs) bs.style.display='inline-flex';
+      }
+    }
+
+    if(sala.estado === 'finished'){
+      teacherMostrarPodio(codigo, sala);
+    }
+  });
+}
+
+function teacherIniciarQuiz(codigo){
+  db.ref('salas/'+codigo+'/estado').set('playing');
+  db.ref('salas/'+codigo+'/preguntaActual').set(0);
+  db.ref('salas/'+codigo+'/timerInicio').set(Date.now());
+  toast('¡Quiz iniciado!');
+}
+
+function teacherSiguientePregunta(codigo){
+  db.ref('salas/'+codigo).once('value').then(function(snap){
+    var sala = snap.val();
+    if(!sala) return;
+    var next = sala.preguntaActual + 1;
+    if(next >= sala.preguntas.length){
+      db.ref('salas/'+codigo+'/estado').set('finished');
+      toast('¡Quiz finalizado!');
+    } else {
+      db.ref('salas/'+codigo+'/preguntaActual').set(next);
+      db.ref('salas/'+codigo+'/timerInicio').set(Date.now());
+    }
+  });
+}
+
+function teacherCerrarSala(codigo){
+  if(!confirm('¿Cerrar y eliminar esta sala?')) return;
+  if(QUIZ.salaRef) QUIZ.salaRef.off();
+  db.ref('salas/'+codigo).remove().then(function(){
+    toast('Sala cerrada','info');
+    setTab('quiz');
+  });
+}
+
+function teacherMostrarPodio(codigo, sala){
+  var jugadores = Object.values(sala.jugadores||{});
+  jugadores.sort(function(a,b){return(b.pts||0)-(a.pts||0);});
+  var panel = g('quiz-teacher-panel');
+  if(!panel) return;
+  var medals = ['🥇','🥈','🥉'];
+  panel.innerHTML =
+    '<div class="card" style="text-align:center;padding:32px">'+
+      '<div style="font-size:40px;margin-bottom:10px">🏆</div>'+
+      '<h2 style="font-family:\'Rajdhani\',sans-serif;font-size:26px;font-weight:700;margin-bottom:6px">¡Quiz finalizado!</h2>'+
+      '<div style="font-size:13px;color:#4B5563;margin-bottom:24px">Sala '+codigo+' · '+sala.materia+'</div>'+
+      '<div style="max-width:360px;margin:0 auto">'+
+      jugadores.slice(0,10).map(function(j,i){
+        var medal = medals[i] || '#'+(i+1);
+        return '<div class="task-row" style="margin-bottom:8px">'+
+          '<span style="font-size:20px;width:32px">'+medal+'</span>'+
+          avHtml(j.nombre,32)+
+          '<span style="flex:1;font-weight:700;text-align:left">'+j.nombre+'</span>'+
+          '<span class="pts-badge">⭐ '+(j.pts||0)+' pts</span>'+
+        '</div>';
+      }).join('')+
+      (jugadores.length===0?'<p style="color:#374151">Nadie participó.</p>':'')+
+      '</div>'+
+      '<button class="btn btn-primary" style="margin-top:20px" onclick="teacherCerrarSala(\''+codigo+'\')">Cerrar sala</button>'+
+    '</div>';
+}
+
+// ══════════════════════════════════════════════════
+// PANEL ALUMNO — QUIZ EN VIVO
+// ══════════════════════════════════════════════════
+function studentQuiz(){
+  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Quiz en Vivo</h1></div>'+
+    '<div id="quiz-student-panel">'+
+      '<div class="card" style="text-align:center;padding:36px">'+
+        '<div style="font-size:44px;margin-bottom:14px">⚡</div>'+
+        '<p style="font-size:15px;color:#9CA3AF;margin-bottom:20px">Ingresá el código que te dio tu docente.</p>'+
+        '<div style="max-width:280px;margin:0 auto;display:flex;flex-direction:column;gap:12px">'+
+          '<input type="text" id="codigo-input" maxlength="7" placeholder="Ej: KNR-672" style="text-align:center;font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;font-family:\'JetBrains Mono\',monospace" oninput="this.value=this.value.toUpperCase()">'+
+          '<button class="btn btn-primary btn-full btn-lg" onclick="studentUnirseQuiz()">Unirse al quiz</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
+
+function studentUnirseQuiz(){
+  var codigo = (g('codigo-input') ? g('codigo-input').value.trim() : '');
+  if(!codigo || codigo.length < 5){toast('Ingresá el código completo','err');return;}
+  db.ref('salas/'+codigo).once('value').then(function(snap){
+    if(!snap.exists()){toast('Sala no encontrada. Verificá el código','err');return;}
+    var sala = snap.val();
+    if(sala.estado === 'finished'){toast('Esta sala ya terminó','err');return;}
+    // Registrar jugador
+    var key = emailToKey(STATE.profile.email);
+    db.ref('salas/'+codigo+'/jugadores/'+key).set({
+      nombre: STATE.profile.name,
+      pts: 0,
+      conectado: true,
+    }).then(function(){
+      QUIZ.codigo = codigo;
+      studentEscucharSala(codigo);
+    });
+  });
+}
+
+function studentEscucharSala(codigo){
+  var panel = g('quiz-student-panel');
+  if(!panel) return;
+
+  panel.innerHTML =
+    '<div class="card" style="text-align:center;padding:32px" id="student-sala-waiting">'+
+      '<div class="spin-el" style="margin:0 auto 16px"></div>'+
+      '<div style="font-size:16px;font-weight:700;margin-bottom:6px">Sala '+codigo+'</div>'+
+      '<p style="font-size:13px;color:#4B5563">Esperando que el docente inicie el quiz...</p>'+
+      '<div style="margin-top:16px;font-size:12px;color:#374151" id="student-count-waiting"></div>'+
+    '</div>'+
+    '<div id="student-quiz-area"></div>';
+
+  if(QUIZ.salaRef) QUIZ.salaRef.off();
+  QUIZ.salaRef = db.ref('salas/'+codigo);
+
+  QUIZ.salaRef.on('value', function(snap){
+    var sala = snap.val();
+    if(!sala){toast('La sala fue cerrada','info');studentQuizReset();return;}
+
+    var jugadores = Object.values(sala.jugadores||{});
+    var waiting = g('student-sala-waiting');
+    if(waiting) h('student-count-waiting', '👥 '+jugadores.length+' jugador'+(jugadores.length!==1?'es':'')+' en sala');
+
+    if(sala.estado === 'waiting'){
+      // Mostrar sala de espera
+      if(waiting) waiting.style.display='block';
+    } else if(sala.estado === 'playing'){
+      if(waiting) waiting.style.display='none';
+      studentMostrarPregunta(sala, codigo);
+    } else if(sala.estado === 'finished'){
+      if(QUIZ.timer) clearInterval(QUIZ.timer);
+      studentMostrarResultado(sala, codigo);
+    }
+  });
+}
+
+function studentMostrarPregunta(sala, codigo){
+  var idx = sala.preguntaActual;
+  var pq = sala.preguntas[idx];
+  if(!pq) return;
+
+  var key = emailToKey(STATE.profile.email);
+  var yaRespondio = sala.respuestas && sala.respuestas['p'+idx] && sala.respuestas['p'+idx][key];
+
+  var tiempoTranscurrido = sala.timerInicio ? Math.floor((Date.now() - sala.timerInicio)/1000) : 0;
+  var tiempoRestante = Math.max(0, sala.timerSeg - tiempoTranscurrido);
+
+  var area = g('student-quiz-area');
+  if(!area) return;
+
+  area.innerHTML =
+    '<div class="card">'+
+      '<div class="row" style="margin-bottom:14px">'+
+        '<span style="font-size:12px;color:#4B5563;font-family:monospace">Pregunta '+(idx+1)+' de '+sala.preguntas.length+'</span>'+
+        '<span class="sp"></span>'+
+        '<span id="quiz-timer" style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700;color:'+(tiempoRestante<=5?'#EF4444':'#F97316')+'">'+tiempoRestante+'s</span>'+
+      '</div>'+
+      '<div style="height:4px;background:#1E2333;border-radius:2px;margin-bottom:18px;overflow:hidden">'+
+        '<div id="quiz-timer-bar" style="height:100%;background:#F97316;border-radius:2px;transition:width .9s linear;width:'+(tiempoRestante/sala.timerSeg*100)+'%"></div>'+
+      '</div>'+
+      '<div style="font-size:17px;font-weight:700;margin-bottom:20px;line-height:1.4">'+pq.q+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="opciones-grid">'+
+      (yaRespondio
+        ? pq.opts.map(function(op,i){
+            var correct = i === pq.a;
+            var chosen = sala.respuestas['p'+idx][key].opcion === i;
+            var bg = correct?'#10B98118':chosen?'#EF444418':'#11141C';
+            var bc = correct?'#10B981':chosen?'#EF4444':'#1E2333';
+            var tc = correct?'#10B981':chosen?'#EF4444':'#4B5563';
+            return '<div style="padding:14px;border-radius:10px;border:1px solid '+bc+';background:'+bg+';font-size:14px;font-weight:'+(correct||chosen?'700':'400')+';color:'+tc+'">'+
+              '<span style="opacity:.6">'+['A','B','C','D'][i]+'. </span>'+op+
+              (correct?' ✓':'')+(chosen&&!correct?' ✗':'')+
+            '</div>';
+          }).join('')
+        : pq.opts.map(function(op,i){
+            return '<button onclick="studentResponder(\''+codigo+'\','+idx+','+i+')" style="padding:14px;border-radius:10px;border:1px solid #1E2333;background:#11141C;color:#F0EDE8;font-size:14px;cursor:pointer;text-align:left;transition:all .15s;font-family:\'Nunito\',sans-serif" onmouseover="this.style.borderColor=\'#F97316\';this.style.background=\'#F9731610\'" onmouseout="this.style.borderColor=\'#1E2333\';this.style.background=\'#11141C\'">'+
+              '<span style="color:#F97316;font-weight:700">'+['A','B','C','D'][i]+'. </span>'+op+
+            '</button>';
+          }).join('')
+      )+
+      '</div>'+
+      (yaRespondio?'<div style="text-align:center;margin-top:14px;font-size:13px;color:#10B981">✓ Respuesta registrada · Esperando siguiente pregunta...</div>':'')+
+    '</div>';
+
+  // Timer countdown
+  if(QUIZ.timer) clearInterval(QUIZ.timer);
+  if(!yaRespondio){
+    QUIZ.tiempoRespuesta = Date.now();
+    QUIZ.timer = setInterval(function(){
+      tiempoTranscurrido = Math.floor((Date.now() - sala.timerInicio)/1000);
+      tiempoRestante = Math.max(0, sala.timerSeg - tiempoTranscurrido);
+      var tel = g('quiz-timer');
+      var bar = g('quiz-timer-bar');
+      if(tel){
+        tel.textContent = tiempoRestante+'s';
+        tel.style.color = tiempoRestante <= 5 ? '#EF4444' : '#F97316';
+      }
+      if(bar) bar.style.width = (tiempoRestante/sala.timerSeg*100)+'%';
+      if(tiempoRestante <= 0){
+        clearInterval(QUIZ.timer);
+        // Auto-marcar sin respuesta
+        var key2 = emailToKey(STATE.profile.email);
+        db.ref('salas/'+codigo+'/respuestas/p'+idx+'/'+key2).set({opcion:-1,tiempo:sala.timerSeg,pts:0});
+      }
+    }, 500);
+  }
+}
+
+function studentResponder(codigo, idx, opcion){
+  var key = emailToKey(STATE.profile.email);
+  if(QUIZ.timer) clearInterval(QUIZ.timer);
+  var tiempoUsado = QUIZ.tiempoRespuesta ? (Date.now() - QUIZ.tiempoRespuesta)/1000 : 20;
+
+  db.ref('salas/'+codigo).once('value').then(function(snap){
+    var sala = snap.val();
+    if(!sala) return;
+    var pq = sala.preguntas[idx];
+    var correcto = opcion === pq.a;
+    var timerSeg = sala.timerSeg || 20;
+    var pts = 0;
+    if(correcto){
+      // Bonus por velocidad: máx 800, mín 200, proporcional al tiempo restante
+      var factor = Math.max(0, 1 - tiempoUsado/timerSeg);
+      pts = Math.round(200 + 600*factor);
+    }
+    // Guardar respuesta
+    db.ref('salas/'+codigo+'/respuestas/p'+idx+'/'+key).set({
+      opcion: opcion,
+      tiempo: Math.round(tiempoUsado*10)/10,
+      pts: pts,
+      correcto: correcto,
+    });
+    // Actualizar puntos acumulados del jugador en la sala
+    db.ref('salas/'+codigo+'/jugadores/'+key+'/pts').transaction(function(current){
+      return (current||0) + pts;
+    });
+    // Actualizar puntos globales del usuario
+    if(pts > 0){
+      var newPts = (STATE.profile.points||0) + pts;
+      STATE.profile.points = newPts;
+      db.ref('users/'+key).update({points: newPts});
+    }
+    if(correcto){
+      toast('+'+pts+' pts ⚡ ¡Correcto!');
+    } else {
+      toast('Incorrecto 😞 La respuesta era: '+pq.opts[pq.a]);
+    }
+  });
+}
+
+function studentMostrarResultado(sala, codigo){
+  var key = emailToKey(STATE.profile.email);
+  var jugadores = Object.values(sala.jugadores||{});
+  jugadores.sort(function(a,b){return(b.pts||0)-(a.pts||0);});
+  var miPos = jugadores.findIndex(function(j){return emailToKey(j.nombre||'')=== key || j.nombre===STATE.profile.name;}) + 1;
+  var miPts = (sala.jugadores[key]||{}).pts || 0;
+  var medals = ['🥇','🥈','🥉'];
+  var area = g('student-quiz-area');
+  if(!area) return;
+  area.innerHTML =
+    '<div class="card" style="text-align:center;padding:32px">'+
+      '<div style="font-size:40px;margin-bottom:10px">🏆</div>'+
+      '<h2 style="font-family:\'Rajdhani\',sans-serif;font-size:24px;font-weight:700;margin-bottom:4px">¡Quiz terminado!</h2>'+
+      '<div style="font-size:13px;color:#4B5563;margin-bottom:20px">'+sala.materia+'</div>'+
+      '<div style="background:#F9731618;border:1px solid #F9731630;border-radius:12px;padding:16px;margin-bottom:20px;display:inline-block;min-width:180px">'+
+        '<div style="font-size:11px;color:#4B5563;letter-spacing:1px">TUS PUNTOS</div>'+
+        '<div style="font-family:\'Rajdhani\',sans-serif;font-size:36px;font-weight:700;color:#F97316">'+miPts+'</div>'+
+        (miPos>0?'<div style="font-size:12px;color:#4B5563">Posición #'+miPos+'</div>':'')+
+      '</div>'+
+      '<div style="max-width:320px;margin:0 auto">'+
+      jugadores.slice(0,5).map(function(j,i){
+        return '<div class="task-row" style="margin-bottom:6px">'+
+          '<span style="font-size:18px;width:28px">'+( medals[i]||'#'+(i+1))+'</span>'+
+          avHtml(j.nombre,28)+
+          '<span style="flex:1;font-size:13px;font-weight:600">'+j.nombre+'</span>'+
+          '<span class="pts-badge">⭐ '+(j.pts||0)+'</span>'+
+        '</div>';
+      }).join('')+
+      '</div>'+
+      '<button class="btn btn-primary" style="margin-top:20px" onclick="studentQuizReset()">Volver al Quiz</button>'+
+    '</div>';
+}
+
+function studentQuizReset(){
+  if(QUIZ.salaRef) QUIZ.salaRef.off();
+  if(QUIZ.timer) clearInterval(QUIZ.timer);
+  QUIZ.salaRef = null; QUIZ.codigo = null;
+  setTab('quiz');
+}
+
 
 render();
 </script>
