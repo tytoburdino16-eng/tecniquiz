@@ -896,7 +896,7 @@ function teacherBankPanel(){
           '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="flex:1;min-width:130px">'+cuatriOpts+'</select>'+
           '<select id="tb-filtro-anio" onchange="teacherBankLoad()" style="flex:1;min-width:120px">'+
             '<option value="todos">Todos los años</option>'+
-            YEARS.map(function(y){return \'<option value="\'+y+\'">\'+y+\'</option>\';}).join(\'\')+'
+            YEARS.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('')+
           '</select>'+
         '</div>'+
         '<input type="text" id="tb-search" placeholder="🔍 Buscar por pregunta o tema..." style="width:100%" oninput="teacherBankLoad()">'+
