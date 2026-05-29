@@ -2180,6 +2180,143 @@ function teacherDownloadTemplate(){
 
 
 
+function teacherResults(){
+  var key = emailToKey(STATE.profile.email);
+  setTimeout(function(){ loadTeacherStats(key); }, 80);
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Resultados y Estadísticas</h1>'+
+    '</div>'+
+    '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="stats-overview">'+
+      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+      '<div class="card"><div class="card-title">Entregas de tareas</div>'+
+        '<div id="stats-tareas"><div class="spin-el" style="margin:0 auto;display:block"></div></div></div>'+
+      '<div class="card"><div class="card-title">Resultados de Quiz</div>'+
+        '<div id="stats-quiz"><div class="spin-el" style="margin:0 auto;display:block"></div></div></div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:0"><div class="card-title">Desempeño por alumno</div>'+
+      '<div id="stats-alumnos"><div class="spin-el" style="margin:0 auto;display:block"></div></div></div>';
+}
+
+function loadTeacherStats(key){
+  db.ref('tasks').once('value').then(function(tsnap){
+    var allTasks=[];
+    tsnap.forEach(function(child){ allTasks.push(Object.assign({id:child.key},child.val())); });
+    var myTasks=allTasks.filter(function(t){ return t.teacherKey===key; });
+    db.ref('users').once('value').then(function(usnap){
+      var students=[];
+      usnap.forEach(function(child){
+        var u=child.val();
+        if(u.role==='student') students.push(Object.assign({key:child.key},u));
+      });
+      db.ref('salas').once('value').then(function(ssnap){
+        var salas=[];
+        ssnap.forEach(function(child){
+          var s=child.val();
+          if(s&&s.docenteKey===key) salas.push(Object.assign({id:child.key},s));
+        });
+        renderTeacherStats(myTasks,students,salas);
+      }).catch(function(){ renderTeacherStats(myTasks,students,[]); });
+    });
+  });
+}
+
+function renderTeacherStats(tasks,students,salas){
+  var totalEntregas=0;
+  tasks.forEach(function(t){ totalEntregas+=Object.keys(t.submissions||{}).length; });
+  var totalQuizPart=0;
+  salas.forEach(function(s){ totalQuizPart+=Object.keys(s.jugadores||{}).length; });
+
+  var ov=g('stats-overview');
+  if(ov) ov.innerHTML=
+    '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+tasks.length+'</div><div class="stat-lbl">Tareas creadas</div></div>'+
+    '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+totalEntregas+'</div><div class="stat-lbl">Entregas recibidas</div></div>'+
+    '<div class="stat-card"><div class="stat-val" style="color:#38BDF8">'+salas.length+'</div><div class="stat-lbl">Quiz realizados</div></div>'+
+    '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+totalQuizPart+'</div><div class="stat-lbl">Participaciones</div></div>';
+
+  var te=g('stats-tareas');
+  if(te){
+    if(tasks.length===0){ te.innerHTML='<p style="color:#374151;font-size:13px;text-align:center;padding:16px">No creaste tareas aún.</p>'; }
+    else {
+      te.innerHTML=tasks.slice(0,8).map(function(t){
+        var subs=Object.keys(t.submissions||{}).length;
+        var total=students.filter(function(s){return s.year===t.year;}).length;
+        var pct=total>0?Math.round(subs/total*100):0;
+        return '<div style="margin-bottom:12px">'+
+          '<div class="row" style="margin-bottom:5px">'+
+            '<span style="font-size:13px;font-weight:700;flex:1">'+t.title+'</span>'+
+            '<span style="font-size:12px;color:#4B5563">'+subs+'/'+(total||'?')+'</span>'+
+          '</div>'+
+          '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%"></div></div>'+
+          '<div style="font-size:11px;color:#4B5563;margin-top:3px">'+pct+'% entregado</div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  var qe=g('stats-quiz');
+  if(qe){
+    if(salas.length===0){ qe.innerHTML='<p style="color:#374151;font-size:13px;text-align:center;padding:16px">No realizaste quizzes aún.</p>'; }
+    else {
+      qe.innerHTML=salas.slice(-5).reverse().map(function(s){
+        var jugs=Object.values(s.jugadores||{});
+        var pts=jugs.map(function(j){return j.pts||0;});
+        var avg=pts.length?Math.round(pts.reduce(function(a,b){return a+b;},0)/pts.length):0;
+        return '<div style="margin-bottom:8px;padding:10px;background:#11141C;border-radius:8px;border:1px solid #1E2333">'+
+          '<div class="row"><span style="font-size:13px;font-weight:700;flex:1">'+s.materia+'</span>'+
+          '<span style="font-size:11px;color:#F97316;font-family:monospace">'+s.codigo+'</span></div>'+
+          '<div style="font-size:12px;color:#4B5563;margin-top:3px">'+jugs.length+' jugadores · Promedio: <span style="color:#10B981;font-weight:700">'+avg+' pts</span></div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  var ae=g('stats-alumnos');
+  if(ae){
+    var alumnosMap={};
+    tasks.forEach(function(t){
+      Object.entries(t.submissions||{}).forEach(function(e){
+        var k=e[0],sub=e[1];
+        if(!alumnosMap[k]) alumnosMap[k]={nombre:sub.studentName||k,entregas:0,ptsTotal:0};
+        alumnosMap[k].entregas++;
+        alumnosMap[k].ptsTotal+=(sub.ptsTotal||0);
+      });
+    });
+    salas.forEach(function(s){
+      Object.entries(s.jugadores||{}).forEach(function(e){
+        var k=e[0],j=e[1];
+        if(!alumnosMap[k]) alumnosMap[k]={nombre:j.nombre||k,entregas:0,ptsTotal:0};
+        alumnosMap[k].ptsTotal+=(j.pts||0);
+      });
+    });
+    var list=Object.entries(alumnosMap).map(function(e){return Object.assign({key:e[0]},e[1]);})
+      .sort(function(a,b){return (b.ptsTotal+b.entregas*100)-(a.ptsTotal+a.entregas*100);});
+    if(list.length===0){
+      ae.innerHTML='<p style="color:#374151;font-size:13px;text-align:center;padding:16px">Ningún alumno participó todavía.</p>';
+    } else {
+      ae.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="border-bottom:1px solid #1E2333;color:#4B5563;font-size:11px">'+
+          '<th style="padding:8px 12px;text-align:left">ALUMNO</th>'+
+          '<th style="padding:8px 12px;text-align:center">ENTREGAS</th>'+
+          '<th style="padding:8px 12px;text-align:center">PUNTOS</th>'+
+        '</tr></thead><tbody>'+
+        list.map(function(a){
+          return '<tr style="border-bottom:1px solid #1E233350">'+
+            '<td style="padding:10px 12px">'+avHtml(a.nombre,28)+'<span style="margin-left:8px;font-weight:600">'+a.nombre+'</span></td>'+
+            '<td style="padding:10px 12px;text-align:center;color:#F97316;font-weight:700">'+a.entregas+'</td>'+
+            '<td style="padding:10px 12px;text-align:center;color:#A78BFA;font-weight:700">'+a.ptsTotal+'</td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table></div>';
+    }
+  }
+}
+
+
 function teacherBankPanel(){
   var key = emailToKey(STATE.profile.email);
   db.ref('users/'+key+'/subjects').once('value').then(function(snap){
