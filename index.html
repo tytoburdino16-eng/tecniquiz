@@ -14,6 +14,9 @@
 html,body{font-family:'Nunito',sans-serif;background:#080A0F;color:#F0EDE8;min-height:100vh}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0F1117}::-webkit-scrollbar-thumb{background:#1E2333;border-radius:2px}
 input,button,select,textarea{font-family:'Nunito',sans-serif}
+/* Hide Firebase auth iframes that can block UI */
+iframe[name^="I0_"]{display:none!important}
+iframe[src*="firebaseapp.com"]{pointer-events:none!important;width:1px!important;height:1px!important}
 
 /* ── Layout desktop ── */
 #app{min-height:100vh}
@@ -909,8 +912,8 @@ function teacherBankPanel(){
     '<span class="sp"></span>'+
     '<div class="row" style="gap:8px;flex-wrap:wrap">'+
       '<button class="btn btn-sm" onclick="teacherDownloadTemplate()" title="Descargar plantilla CSV">📄 Plantilla</button>'+
-      '<button class="btn btn-sm" onclick="teacherOpenImportCSV()">📥 Importar CSV</button>'+
-      '<button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Nueva</button>'+
+      '<button class="btn btn-sm" onclick="event.stopPropagation();teacherOpenImportCSV()">📥 Importar CSV</button>'+
+      '<button class="btn btn-primary" onclick="event.stopPropagation();teacherOpenNuevaPregunta()">＋ Nueva</button>'+
     '</div>'+
     '</div>'+
     '<div id="teacher-bank-wrap"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
