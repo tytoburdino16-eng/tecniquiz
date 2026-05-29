@@ -875,7 +875,7 @@ function viewTaskMonitor(taskId){
                 '<div style="flex:1"><div style="font-weight:700">'+( stu.name||sub.studentName||skey)+'</div>'+
                   '<div style="font-size:12px;color:#4B5563">'+fmtDateTime(sub.submittedAt)+(sub.reentregado?' · Re-entrega':'')+' · '+(sub.corregido?'<span style="color:#10B981">Corregida: '+sub.ptsTotal+' pts</span>':'<span style="color:#F59E0B">Sin corregir</span>')+'</div>'+
                 '</div>'+
-                '<button class="btn btn-primary btn-sm" onclick="teacherCorregirEntrega(''+taskId+'',''+skey+'')">'+( sub.corregido?'✏️ Re-corregir':'✅ Corregir')+'</button>'+
+                '<button class="btn btn-primary btn-sm" data-task="'+taskId+'" data-skey="'+skey+'" onclick="teacherCorregirEntrega(this.dataset.task,this.dataset.skey)">'+( sub.corregido?'✏️ Re-corregir':'✅ Corregir')+'</button>'+
               '</div>'+
               // Show respuestas preview
               '<div style="display:flex;flex-direction:column;gap:6px">'+
