@@ -1026,7 +1026,7 @@ function teacherOpenNuevaPregunta(id){
     var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
       return '<option value="'+c2+'"'+(data&&data.trimestre===c2?' selected':'')+'>'+c2+'</option>';
     }).join('');
-    var tRoot = document.getElementById('tb-modal-root') ? 'tb-modal-root' : 'modal-root';
+    var tRoot = 'modal-root';
     h(tRoot,
       '<div class="overlay" onclick="closeTBModal()">'+
       '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
@@ -1083,8 +1083,8 @@ function teacherOpenNuevaPregunta(id){
 function teacherEditarPregunta(id){ teacherOpenNuevaPregunta(id); }
 
 function closeTBModal(){ 
-  h('tb-modal-root',''); 
   h('modal-root','');
+  h('tb-modal-root','');
 }
 
 function teacherGuardarPregunta(id){
@@ -2476,7 +2476,7 @@ console.log("TecniQuiz v3.1 loaded OK");
 
 function teacherOpenImportCSV(){
   console.log('teacherOpenImportCSV called, tb-modal-root:', document.getElementById('tb-modal-root'));
-  var importRoot = document.getElementById('tb-modal-root') ? 'tb-modal-root' : 'modal-root';
+  var importRoot = 'modal-root';
   h(importRoot,
     '<div class="overlay" onclick="closeTBModal()">'+
     '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
