@@ -2182,3 +2182,236 @@ render();
 </script>
 </body>
 </html>
+function teacherBankPanel(){
+  var key = emailToKey(STATE.profile.email);
+  db.ref('users/'+key+'/subjects').once('value').then(function(snap){
+    var subjects = Object.values(snap.val()||{});
+    var materias = subjects.map(function(s){return s.subject;});
+    if(materias.length === 0){ materias = BANK_MATERIAS; }
+    window._teacherMaterias = materias;
+
+    var materiaOpts = '<option value="todas">Todas mis materias</option>'+
+      materias.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('');
+    var cuatriOpts = '<option value="todos">Todos los trimestres</option>'+
+      ['1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(t){
+        return '<option value="'+t+'">'+t+'</option>';
+      }).join('');
+    var anioOpts = YEARS.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+
+    h('teacher-bank-wrap',
+      '<div class="card" style="padding:14px;margin-bottom:12px">'+
+        '<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
+          '<select id="tb-filtro-materia" onchange="teacherBankLoad()" style="flex:2;min-width:180px">'+materiaOpts+'</select>'+
+          '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="flex:1;min-width:130px">'+cuatriOpts+'</select>'+
+          '<select id="tb-filtro-anio" onchange="teacherBankLoad()" style="flex:1;min-width:120px">'+
+            '<option value="todos">Todos los años</option>'+anioOpts+
+          '</select>'+
+        '</div>'+
+        '<input type="text" id="tb-search" placeholder="🔍 Buscar por pregunta o tema..." style="width:100%" oninput="teacherBankLoad()">'+
+      '</div>'+
+      '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px" id="tb-stats">'+
+        '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+        '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+        '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'+
+      '</div>'+
+      '<div id="tb-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
+      '<div id="tb-modal-root"></div>'
+    );
+    setTimeout(teacherBankLoad, 80);
+  });
+  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
+    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Preguntas</h1>'+
+    '<span class="sp"></span>'+
+    '<div class="row" style="gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-sm" onclick="teacherDownloadTemplate()">📄 Plantilla</button>'+
+      '<button class="btn btn-sm" onclick="event.stopPropagation();teacherOpenImportCSV()">📥 Importar CSV</button>'+
+      '<button class="btn btn-primary" onclick="event.stopPropagation();teacherOpenNuevaPregunta()">＋ Nueva</button>'+
+    '</div>'+
+    '</div>'+
+    '<div id="teacher-bank-wrap"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
+}
+
+function teacherBankLoad(){
+  var filtroM = g('tb-filtro-materia') ? g('tb-filtro-materia').value : 'todas';
+  var filtroT = g('tb-filtro-tri') ? g('tb-filtro-tri').value : 'todos';
+  var filtroA = g('tb-filtro-anio') ? g('tb-filtro-anio').value : 'todos';
+  var search = g('tb-search') ? g('tb-search').value.toLowerCase() : '';
+  var myEmail = STATE.profile.email;
+
+  db.ref('banco').once('value').then(function(snap){
+    var todas = [];
+    snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
+
+    var materias = window._teacherMaterias || [];
+    var mias = todas.filter(function(p){
+      if(!p) return false;
+      if(p.creadoPor === myEmail) return true;
+      if(materias.length > 0 && p.materia && materias.some(function(m){
+        return m.trim().toLowerCase() === p.materia.trim().toLowerCase();
+      })) return true;
+      if(materias.length === 0) return true;
+      return false;
+    });
+    var totalMias = mias.length;
+
+    var filtered = mias.filter(function(p){
+      var matchM = filtroM==='todas' || (p.materia&&p.materia.trim().toLowerCase()===filtroM.trim().toLowerCase());
+      var matchC = filtroT==='todos' || !p.trimestre || p.trimestre==='todos' || p.trimestre.trim()===filtroT.trim();
+      var matchA = filtroA==='todos' || !p.anio || p.anio==='todos' || p.anio===filtroA;
+      var matchS = !search || p.pregunta.toLowerCase().includes(search) ||
+                   (p.tema&&p.tema.toLowerCase().includes(search)) ||
+                   (p.materia&&p.materia.toLowerCase().includes(search));
+      return matchM && matchC && matchA && matchS;
+    });
+
+    var statsEl = g('tb-stats');
+    if(statsEl) statsEl.innerHTML =
+      '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+totalMias+'</div><div class="stat-lbl">Total mis preguntas</div></div>'+
+      '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+filtered.length+'</div><div class="stat-lbl">Filtradas</div></div>'+
+      '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+materias.length+'</div><div class="stat-lbl">Mis materias</div></div>';
+
+    var el = g('tb-list'); if(!el) return;
+    if(filtered.length === 0){
+      el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:#374151">'+
+        (totalMias===0
+          ? 'No tenés preguntas cargadas aún.<br><br><button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Agregar primera pregunta</button>'
+          : 'Sin resultados para ese filtro.')+
+        '</div>';
+      return;
+    }
+
+    var difs = {facil:'#10B981',media:'#F59E0B',dificil:'#EF4444'};
+    el.innerHTML = filtered.map(function(p){
+      return '<div class="card" style="margin-bottom:10px">'+
+        '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-size:14px;font-weight:700;line-height:1.4">'+p.pregunta+'</div>'+
+            '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">'+
+              '<span class="tag tag-teacher" style="font-size:9px">'+p.materia+'</span>'+
+              (p.trimestre&&p.trimestre!=='todos'?'<span class="tag tag-sky" style="font-size:9px">'+p.trimestre+'</span>':'')+
+              (p.anio&&p.anio!=='todos'?'<span class="tag tag-muted" style="font-size:9px">'+p.anio+'</span>':'')+
+              (p.tema?'<span class="tag tag-violet" style="font-size:9px">'+p.tema+'</span>':'')+
+              '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:'+(difs[p.dificultad]||'#374151')+'20;color:'+(difs[p.dificultad]||'#374151')+';font-weight:700">'+(p.dificultad||'media')+'</span>'+
+            '</div>'+
+          '</div>'+
+          '<div class="row" style="gap:6px">'+
+            '<button class="btn btn-sm" data-id="'+p.id+'" onclick="teacherEditarPregunta(this.dataset.id)">✏️</button>'+
+            '<button class="btn btn-sm btn-danger" data-id="'+p.id+'" onclick="teacherEliminarPregunta(this.dataset.id)">✕</button>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        (p.opciones||[]).map(function(op,j){
+          var correct = j===p.correcta;
+          return '<div style="padding:8px 12px;border-radius:8px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98114':'#11141C')+';font-size:12px;color:'+(correct?'#10B981':'#6B7280')+'">'+
+            '<span style="font-weight:700">'+['A','B','C','D'][j]+'.</span> '+op+(correct?' ✓':'')+
+          '</div>';
+        }).join('')+
+        '</div>'+
+      '</div>';
+    }).join('');
+  });
+}
+
+function teacherOpenNuevaPregunta(id){
+  var materias = window._teacherMaterias || [];
+  if(materias.length===0){ materias = BANK_MATERIAS; }
+  var isEdit = !!id;
+  if(!window._teacherMaterias){
+    var k = emailToKey(STATE.profile.email);
+    db.ref('users/'+k+'/subjects').once('value').then(function(snap){
+      var subs = Object.values(snap.val()||{});
+      window._teacherMaterias = subs.map(function(s){return s.subject;});
+      if(window._teacherMaterias.length===0) window._teacherMaterias = BANK_MATERIAS;
+      teacherOpenNuevaPregunta(id);
+    });
+    return;
+  }
+  var renderModal = function(data){
+    var materiaOpts = materias.map(function(m){
+      return '<option value="'+m+'"'+(data&&data.materia===m?' selected':'')+'>'+m+'</option>';
+    }).join('');
+    var triOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(t){
+      return '<option value="'+t+'"'+(data&&data.trimestre===t?' selected':'')+'>'+t+'</option>';
+    }).join('');
+    var anioOpts = ['todos'].concat(YEARS).map(function(y){
+      return '<option value="'+y+'"'+(data&&data.anio===y?' selected':'')+'>'+y+'</option>';
+    }).join('');
+    h('modal-root',
+      '<div class="overlay" onclick="closeTBModal()">'+
+      '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
+        '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+          '<span class="modal-title">'+(isEdit?'Editar pregunta':'Nueva pregunta')+'</span>'+
+          '<button class="close-btn" onclick="closeTBModal()">×</button>'+
+        '</div>'+
+        '<div class="modal-body"><div class="col" style="gap:14px">'+
+          '<div><label class="field-label">Pregunta</label>'+
+            '<textarea id="tb-pregunta" rows="3" placeholder="Escribí la pregunta...">'+(data?data.pregunta:'')+'</textarea></div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Opción A</label><input type="text" id="tb-a" value="'+(data&&data.opciones?data.opciones[0]:'')+'" placeholder="Opción A"></div>'+
+            '<div><label class="field-label">Opción B</label><input type="text" id="tb-b" value="'+(data&&data.opciones?data.opciones[1]:'')+'" placeholder="Opción B"></div>'+
+            '<div><label class="field-label">Opción C</label><input type="text" id="tb-c" value="'+(data&&data.opciones?data.opciones[2]:'')+'" placeholder="Opción C"></div>'+
+            '<div><label class="field-label">Opción D</label><input type="text" id="tb-d" value="'+(data&&data.opciones?data.opciones[3]:'')+'" placeholder="Opción D"></div>'+
+          '</div>'+
+          '<div><label class="field-label">Respuesta correcta</label>'+
+            '<select id="tb-correcta">'+
+              ['A','B','C','D'].map(function(l,i){return '<option value="'+i+'"'+(data&&data.correcta===i?' selected':'')+'>'+l+'</option>';}).join('')+
+            '</select></div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Materia</label><select id="tb-materia">'+materiaOpts+'</select></div>'+
+            '<div><label class="field-label">Trimestre</label><select id="tb-tri">'+triOpts+'</select></div>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+            '<div><label class="field-label">Año</label><select id="tb-anio">'+anioOpts+'</select></div>'+
+            '<div><label class="field-label">Dificultad</label>'+
+              '<select id="tb-dificultad">'+
+                ['facil','media','dificil'].map(function(d){
+                  return '<option value="'+d+'"'+(data&&data.dificultad===d?' selected':'')+'>'+d.charAt(0).toUpperCase()+d.slice(1)+'</option>';
+                }).join('')+
+              '</select></div>'+
+          '</div>'+
+          '<div><label class="field-label">Tema / Unidad <span style="color:#374151;font-weight:400">(opcional)</span></label>'+
+            '<input type="text" id="tb-tema" value="'+(data&&data.tema?data.tema:'')+'" placeholder="Ej: Unidad 2 — Ventilación"></div>'+
+          '<div class="modal-footer">'+
+            '<button class="btn" onclick="closeTBModal()">Cancelar</button>'+
+            '<button class="btn btn-primary" data-id="'+(id||'')+'" onclick="teacherGuardarPregunta(this.dataset.id)">'+(isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
+          '</div>'+
+        '</div></div>'+
+      '</div></div>'
+    );
+  };
+  if(isEdit){ db.ref('banco/'+id).once('value').then(function(snap){ renderModal(snap.val()); }); }
+  else { renderModal(null); }
+}
+
+function teacherEditarPregunta(id){ teacherOpenNuevaPregunta(id); }
+function closeTBModal(){ h('modal-root',''); h('tb-modal-root',''); }
+
+function teacherGuardarPregunta(id){
+  var pregunta = g('tb-pregunta') ? g('tb-pregunta').value.trim() : '';
+  var a = g('tb-a') ? g('tb-a').value.trim() : '';
+  var b = g('tb-b') ? g('tb-b').value.trim() : '';
+  var cv = g('tb-c') ? g('tb-c').value.trim() : '';
+  var d = g('tb-d') ? g('tb-d').value.trim() : '';
+  var correcta = g('tb-correcta') ? parseInt(g('tb-correcta').value) : 0;
+  var materia = g('tb-materia') ? g('tb-materia').value : '';
+  var trimestre = g('tb-tri') ? g('tb-tri').value : 'todos';
+  var anio = g('tb-anio') ? g('tb-anio').value : 'todos';
+  var tema = g('tb-tema') ? g('tb-tema').value.trim() : '';
+  var dificultad = g('tb-dificultad') ? g('tb-dificultad').value : 'media';
+  if(!pregunta){toast('Ingresá la pregunta','err');return;}
+  if(!a||!b||!cv||!d){toast('Completá las 4 opciones','err');return;}
+  var data = {pregunta:pregunta,opciones:[a,b,cv,d],correcta:correcta,materia:materia,
+    trimestre:trimestre,anio:anio,dificultad:dificultad,creadoPor:STATE.profile.email};
+  if(tema) data.tema=tema;
+  if(id){ data.editadoEn=Date.now(); } else { data.creadoEn=Date.now(); }
+  var ref = id ? db.ref('banco/'+id) : db.ref('banco').push();
+  var op = id ? ref.update(data) : ref.set(data);
+  op.then(function(){ closeTBModal(); toast(id?'Pregunta actualizada':'¡Pregunta agregada! ✓'); teacherBankLoad(); });
+}
+
+function teacherEliminarPregunta(id){
+  if(!confirm('¿Eliminar esta pregunta del banco?')) return;
+  db.ref('banco/'+id).remove().then(function(){ toast('Pregunta eliminada','info'); teacherBankLoad(); });
+}
+
+
