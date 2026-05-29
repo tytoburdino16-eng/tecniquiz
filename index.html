@@ -891,11 +891,15 @@ function teacherBankPanel(){
     }).join('');
     h('teacher-bank-wrap',
       '<div class="card" style="padding:14px;margin-bottom:12px">'+
-        '<div class="row" style="gap:10px;flex-wrap:wrap">'+
-          '<select id="tb-filtro-materia" onchange="teacherBankLoad()" style="flex:1;min-width:150px">'+materiaOpts+'</select>'+
-          '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="width:150px">'+cuatriOpts+'</select>'+
-          '<input type="text" id="tb-search" placeholder="Buscar..." style="flex:1;min-width:150px" oninput="teacherBankLoad()">'+
+        '<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
+          '<select id="tb-filtro-materia" onchange="teacherBankLoad()" style="flex:2;min-width:180px">'+materiaOpts+'</select>'+
+          '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="flex:1;min-width:130px">'+cuatriOpts+'</select>'+
+          '<select id="tb-filtro-anio" onchange="teacherBankLoad()" style="flex:1;min-width:120px">'+
+            '<option value="todos">Todos los años</option>'+
+            YEARS.map(function(y){return \'<option value="\'+y+\'">\'+y+\'</option>\';}).join(\'\')+'
+          '</select>'+
         '</div>'+
+        '<input type="text" id="tb-search" placeholder="🔍 Buscar por pregunta o tema..." style="width:100%" oninput="teacherBankLoad()">'+
       '</div>'+
       '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px" id="tb-stats">'+
         '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
@@ -922,6 +926,7 @@ function teacherBankPanel(){
 function teacherBankLoad(){
   var filtroM = g('tb-filtro-materia') ? g('tb-filtro-materia').value : 'todas';
   var filtroT = g('tb-filtro-tri') ? g('tb-filtro-tri').value : 'todos';
+  var filtroA = g('tb-filtro-anio') ? g('tb-filtro-anio').value : 'todos';
   var search = g('tb-search') ? g('tb-search').value.toLowerCase() : '';
   var myEmail = STATE.profile.email;
 
@@ -948,9 +953,13 @@ function teacherBankLoad(){
     // Aplicar filtros
     var filtered = mias.filter(function(p){
       var matchM = filtroM==='todas' || (p.materia&&p.materia.trim().toLowerCase()===filtroM.trim().toLowerCase());
-      var matchC = filtroT==='todos' || !p.trimestre || p.trimestre==='todos' || p.trimestre===filtroT;
-      var matchS = !search || p.pregunta.toLowerCase().includes(search);
-      return matchM && matchC && matchS;
+      var matchC = filtroT==='todos' || !p.trimestre || p.trimestre==='todos' || 
+                   p.trimestre.trim()===filtroT.trim();
+      var matchA = filtroA==='todos' || !p.anio || p.anio==='todos' || p.anio===filtroA;
+      var matchS = !search || p.pregunta.toLowerCase().includes(search) || 
+                   (p.tema&&p.tema.toLowerCase().includes(search)) ||
+                   (p.materia&&p.materia.toLowerCase().includes(search));
+      return matchM && matchC && matchA && matchS;
     });
 
     // Stats
