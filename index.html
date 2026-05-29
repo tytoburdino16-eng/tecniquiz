@@ -2178,10 +2178,8 @@ function teacherDownloadTemplate(){
 }
 
 
-render();
-</script>
-</body>
-</html>
+
+
 function teacherBankPanel(){
   var key = emailToKey(STATE.profile.email);
   db.ref('users/'+key+'/subjects').once('value').then(function(snap){
@@ -2414,4 +2412,7 @@ function teacherEliminarPregunta(id){
   db.ref('banco/'+id).remove().then(function(){ toast('Pregunta eliminada','info'); teacherBankLoad(); });
 }
 
-
+render();
+</script>
+</body>
+</html>
