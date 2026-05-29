@@ -933,9 +933,11 @@ function teacherBankLoad(){
       // Si la creó este docente, siempre la ve
       if(p.creadoPor === myEmail) return true;
       // Si es de una materia asignada también la ve
-      if(p.materia && materias.some(function(m){
+      if(materias.length > 0 && p.materia && materias.some(function(m){
         return m.trim().toLowerCase() === p.materia.trim().toLowerCase();
       })) return true;
+      // Si no tiene materias asignadas, muestra todas
+      if(materias.length === 0) return true;
       return false;
     });
     var totalMias = mias.length;
@@ -999,8 +1001,20 @@ function teacherBankLoad(){
 
 function teacherOpenNuevaPregunta(id){
   var materias = window._teacherMaterias || [];
-  if(materias.length===0){toast('Sin materias asignadas','err');return;}
+  if(materias.length===0){ materias = BANK_MATERIAS; }
   var isEdit = !!id;
+  
+  // If materias still loading, fetch them
+  if(!window._teacherMaterias){
+    var k = emailToKey(STATE.profile.email);
+    db.ref('users/'+k+'/subjects').once('value').then(function(snap){
+      var subs = Object.values(snap.val()||{});
+      window._teacherMaterias = subs.map(function(s){return s.subject;});
+      if(window._teacherMaterias.length===0) window._teacherMaterias = BANK_MATERIAS;
+      teacherOpenNuevaPregunta(id);
+    });
+    return;
+  }
 
   var renderModal = function(data){
     var materiaOpts = materias.map(function(m){
@@ -1009,7 +1023,8 @@ function teacherOpenNuevaPregunta(id){
     var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
       return '<option value="'+c2+'"'+(data&&data.trimestre===c2?' selected':'')+'>'+c2+'</option>';
     }).join('');
-    h('tb-modal-root',
+    var tRoot = document.getElementById('tb-modal-root') ? 'tb-modal-root' : 'modal-root';
+    h(tRoot,
       '<div class="overlay" onclick="closeTBModal()">'+
       '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
         '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
@@ -1064,7 +1079,10 @@ function teacherOpenNuevaPregunta(id){
 
 function teacherEditarPregunta(id){ teacherOpenNuevaPregunta(id); }
 
-function closeTBModal(){ h('tb-modal-root',''); }
+function closeTBModal(){ 
+  h('tb-modal-root',''); 
+  h('modal-root','');
+}
 
 function teacherGuardarPregunta(id){
   var pregunta = g('tb-pregunta') ? g('tb-pregunta').value.trim() : '';
@@ -2454,7 +2472,9 @@ console.log("TecniQuiz v3.1 loaded OK");
 // ══════════════════════════════════════════════════
 
 function teacherOpenImportCSV(){
-  h('tb-modal-root',
+  console.log('teacherOpenImportCSV called, tb-modal-root:', document.getElementById('tb-modal-root'));
+  var importRoot = document.getElementById('tb-modal-root') ? 'tb-modal-root' : 'modal-root';
+  h(importRoot,
     '<div class="overlay" onclick="closeTBModal()">'+
     '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
       '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
