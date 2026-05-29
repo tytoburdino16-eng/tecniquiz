@@ -2481,7 +2481,7 @@ function teacherOpenImportCSV(){
           '<label class="field-label">Materia destino</label>'+
           '<select id="csv-materia" style="width:100%">'+
             '<option value="">— Usar la del archivo CSV —</option>'+
-            (window._teacherMaterias||[]).map(function(m){return \'<option value="\'+m+\'">\'+m+\'</option>\';}).join(\'\')+'
+            (window._teacherMaterias||[]).map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('')+
           '</select>'+
           '<div style="font-size:11px;color:#4B5563;margin-top:4px">Si seleccionás una materia acá, todas las preguntas importadas quedarán bajo esa materia.</div>'+
         '</div>'+
