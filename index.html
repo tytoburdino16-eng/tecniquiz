@@ -840,784 +840,156 @@ function deleteTask(id){
 }
 
 function viewTaskMonitor(taskId){
-  db.ref("tasks/"+taskId).once("value").then(function(snap){
-    var task=snap.val();if(!task)return;
-    db.ref("users").once("value").then(function(usnap){
-      var students=Object.values(usnap.val()||{}).filter(function(u){return u.role==="student"&&u.year===task.year;});
-      var subs=task.submissions||{};
-      var delivered=students.filter(function(s){return subs[emailToKey(s.email)];}).length;
-      h("modal-root",'<div class="overlay" onclick="closeModal()">'+
-        '<div class="modal" onclick="event.stopPropagation()">'+
-        '<div class="modal-header"><span class="modal-title">Monitor: '+task.title+'</span><button class="close-btn" onclick="closeModal()">×</button></div>'+
-        '<div class="modal-body">'+
-        '<div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px">'+
-          '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+delivered+'</div><div class="stat-lbl">Entregaron</div></div>'+
-          '<div class="stat-card"><div class="stat-val" style="color:#EF4444">'+(students.length-delivered)+'</div><div class="stat-lbl">Pendiente</div></div>'+
-          '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+students.length+'</div><div class="stat-lbl">Total</div></div>'+
-        '</div>'+
-        students.map(function(s){
-          var sub=subs[emailToKey(s.email)];
-          return '<div class="task-row">'+
-            avHtml(s.name,30)+
-            '<span style="flex:1;font-size:13px;font-weight:600">'+s.name+'</span>'+
-            (sub?'<span style="font-size:11px;background:#10B98120;color:#10B981;padding:2px 8px;border-radius:6px">✓ Entregó</span>':
-              '<span style="font-size:11px;background:#EF444420;color:#EF4444;padding:2px 8px;border-radius:6px">Pendiente</span>')+
-          '</div>';
-        }).join("")+
-        (students.length===0?'<p style="color:#374151;text-align:center;padding:20px">No hay alumnos en este año.</p>':'')+
-        '<div class="modal-footer"><button class="btn" onclick="closeModal()">Cerrar</button></div>'+
-        '</div></div></div>');
-    });
-  });
-}
-
-// teacherQuiz defined in quiz module below
-
-function teacherBankPanel(){
-  var key = emailToKey(STATE.profile.email);
-  db.ref('users/'+key+'/subjects').once('value').then(function(snap){
-    var subjects = Object.values(snap.val()||{});
-    var materias = subjects.map(function(s){return s.subject;});
-    if(materias.length === 0){
-      h('teacher-bank-wrap','<div class="card" style="text-align:center;padding:40px;color:#374151">No tenés materias asignadas. Contactá al administrador.</div>');
-      return;
-    }
-    // Filtros
-    // Build materia options dynamically from actual questions
-    var materiaOpts = '<option value="todas">Todas mis materias</option>'+
-      materias.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('');
-    var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
-      return '<option value="'+c2+'">'+c2+'</option>';
-    }).join('');
-    h('teacher-bank-wrap',
-      '<div class="card" style="padding:14px;margin-bottom:12px">'+
-        '<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
-          '<select id="tb-filtro-materia" onchange="teacherBankLoad()" style="flex:2;min-width:180px">'+materiaOpts+'</select>'+
-          '<select id="tb-filtro-tri" onchange="teacherBankLoad()" style="flex:1;min-width:130px">'+cuatriOpts+'</select>'+
-          '<select id="tb-filtro-anio" onchange="teacherBankLoad()" style="flex:1;min-width:120px">'+
-            '<option value="todos">Todos los años</option>'+
-            YEARS.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('')+
-          '</select>'+
-        '</div>'+
-        '<input type="text" id="tb-search" placeholder="🔍 Buscar por pregunta o tema..." style="width:100%" oninput="teacherBankLoad()">'+
-      '</div>'+
-      '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px" id="tb-stats">'+
-        '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
-      '</div>'+
-      '<div id="tb-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>'+
-      '<div id="tb-modal-root"></div>'
-    );
-    // Guardar materias del docente para uso en modal
-    window._teacherMaterias = materias;
-    setTimeout(teacherBankLoad, 80);
-  });
-  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Preguntas</h1>'+
-    '<span class="sp"></span>'+
-    '<div class="row" style="gap:8px;flex-wrap:wrap">'+
-      '<button class="btn btn-sm" onclick="teacherDownloadTemplate()" title="Descargar plantilla CSV">📄 Plantilla</button>'+
-      '<button class="btn btn-sm" onclick="event.stopPropagation();teacherOpenImportCSV()">📥 Importar CSV</button>'+
-      '<button class="btn btn-primary" onclick="event.stopPropagation();teacherOpenNuevaPregunta()">＋ Nueva</button>'+
-    '</div>'+
-    '</div>'+
-    '<div id="teacher-bank-wrap"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
-}
-
-function teacherBankLoad(){
-  var filtroM = g('tb-filtro-materia') ? g('tb-filtro-materia').value : 'todas';
-  var filtroT = g('tb-filtro-tri') ? g('tb-filtro-tri').value : 'todos';
-  var filtroA = g('tb-filtro-anio') ? g('tb-filtro-anio').value : 'todos';
-  var search = g('tb-search') ? g('tb-search').value.toLowerCase() : '';
-  var myEmail = STATE.profile.email;
-
-  db.ref('banco').once('value').then(function(snap){
-    var todas = [];
-    snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
-
-    // Mostrar preguntas creadas por este docente O de sus materias asignadas
-    var materias = window._teacherMaterias || [];
-    var mias = todas.filter(function(p){
-      if(!p) return false;
-      // Si la creó este docente, siempre la ve
-      if(p.creadoPor === myEmail) return true;
-      // Si es de una materia asignada también la ve
-      if(materias.length > 0 && p.materia && materias.some(function(m){
-        return m.trim().toLowerCase() === p.materia.trim().toLowerCase();
-      })) return true;
-      // Si no tiene materias asignadas, muestra todas
-      if(materias.length === 0) return true;
-      return false;
-    });
-    var totalMias = mias.length;
-
-    // Aplicar filtros
-    var filtered = mias.filter(function(p){
-      var matchM = filtroM==='todas' || (p.materia&&p.materia.trim().toLowerCase()===filtroM.trim().toLowerCase());
-      var matchC = filtroT==='todos' || !p.trimestre || p.trimestre==='todos' || 
-                   p.trimestre.trim()===filtroT.trim();
-      var matchA = filtroA==='todos' || !p.anio || p.anio==='todos' || p.anio===filtroA;
-      var matchS = !search || p.pregunta.toLowerCase().includes(search) || 
-                   (p.tema&&p.tema.toLowerCase().includes(search)) ||
-                   (p.materia&&p.materia.toLowerCase().includes(search));
-      return matchM && matchC && matchA && matchS;
-    });
-
-    // Stats
-    var statsEl = g('tb-stats');
-    if(statsEl) statsEl.innerHTML =
-      '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+totalMias+'</div><div class="stat-lbl">Total mis preguntas</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+filtered.length+'</div><div class="stat-lbl">Filtradas</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+materias.length+'</div><div class="stat-lbl">Mis materias</div></div>';
-
-    var el = g('tb-list');
-    if(!el) return;
-    if(filtered.length === 0){
-      el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:#374151">'+
-        (totalMias===0
-          ? 'No tenés preguntas cargadas aún.<br><br><button class="btn btn-primary" onclick="teacherOpenNuevaPregunta()">＋ Agregar primera pregunta</button>'
-          : 'Sin resultados para ese filtro.')+
-        '</div>';
-      return;
-    }
-
-    var difs = {facil:'#10B981',media:'#F59E0B',dificil:'#EF4444'};
-    el.innerHTML = filtered.map(function(p){
-      return '<div class="card" style="margin-bottom:10px">'+
-        '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
-          '<div style="flex:1;min-width:0">'+
-            '<div style="font-size:14px;font-weight:700;line-height:1.4">'+p.pregunta+'</div>'+
-            '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">'+
-              '<span class="tag tag-teacher" style="font-size:9px">'+p.materia+'</span>'+
-              (p.trimestre&&p.trimestre!=='todos'?'<span class="tag tag-sky" style="font-size:9px">'+p.trimestre+'</span>':'')+
-              (p.tema?'<span class="tag tag-violet" style="font-size:9px">'+p.tema+'</span>':'')+
-              '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:'+(difs[p.dificultad]||'#374151')+'20;color:'+(difs[p.dificultad]||'#374151')+';font-weight:700">'+(p.dificultad||'media')+'</span>'+
-            '</div>'+
-          '</div>'+
-          '<div class="row" style="gap:6px">'+
-            '<button class="btn btn-sm" onclick="teacherEditarPregunta(\''+p.id+'\')">✏️</button>'+
-            '<button class="btn btn-sm btn-danger" onclick="teacherEliminarPregunta(\''+p.id+'\')">✕</button>'+
-          '</div>'+
-        '</div>'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
-        (p.opciones||[]).map(function(op,j){
-          var correct = j===p.correcta;
-          return '<div style="padding:8px 12px;border-radius:8px;border:1px solid '+(correct?'#10B981':'#1E2333')+';background:'+(correct?'#10B98114':'#11141C')+';font-size:12px;color:'+(correct?'#10B981':'#6B7280')+'">'+
-            '<span style="font-weight:700">'+['A','B','C','D'][j]+'.</span> '+op+(correct?' ✓':'')+
-          '</div>';
-        }).join('')+
-        '</div>'+
-      '</div>';
-    }).join('');
-  });
-}
-
-function teacherOpenNuevaPregunta(id){
-  var materias = window._teacherMaterias || [];
-  if(materias.length===0){ materias = BANK_MATERIAS; }
-  var isEdit = !!id;
-  
-  // If materias still loading, fetch them
-  if(!window._teacherMaterias){
-    var k = emailToKey(STATE.profile.email);
-    db.ref('users/'+k+'/subjects').once('value').then(function(snap){
-      var subs = Object.values(snap.val()||{});
-      window._teacherMaterias = subs.map(function(s){return s.subject;});
-      if(window._teacherMaterias.length===0) window._teacherMaterias = BANK_MATERIAS;
-      teacherOpenNuevaPregunta(id);
-    });
-    return;
-  }
-
-  var renderModal = function(data){
-    var materiaOpts = materias.map(function(m){
-      return '<option value="'+m+'"'+(data&&data.materia===m?' selected':'')+'>'+m+'</option>';
-    }).join('');
-    var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
-      return '<option value="'+c2+'"'+(data&&data.trimestre===c2?' selected':'')+'>'+c2+'</option>';
-    }).join('');
-    var tRoot = 'modal-root';
-    h(tRoot,
-      '<div class="overlay" onclick="closeTBModal()">'+
-      '<div class="modal" onclick="event.stopPropagation()" style="overflow-y:auto;max-width:580px">'+
-        '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
-          '<span class="modal-title">'+(isEdit?'Editar pregunta':'Nueva pregunta')+'</span>'+
-          '<button class="close-btn" onclick="closeTBModal()">×</button>'+
-        '</div>'+
-        '<div class="modal-body"><div class="col" style="gap:14px">'+
-          '<div><label class="field-label">Pregunta</label>'+
-            '<textarea id="tb-pregunta" rows="3" placeholder="Escribí la pregunta...">'+(data?data.pregunta:'')+'</textarea>'+
-          '</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-            '<div><label class="field-label">Opción A</label><input type="text" id="tb-a" value="'+(data&&data.opciones?data.opciones[0]:'')+'" placeholder="Opción A"></div>'+
-            '<div><label class="field-label">Opción B</label><input type="text" id="tb-b" value="'+(data&&data.opciones?data.opciones[1]:'')+'" placeholder="Opción B"></div>'+
-            '<div><label class="field-label">Opción C</label><input type="text" id="tb-c" value="'+(data&&data.opciones?data.opciones[2]:'')+'" placeholder="Opción C"></div>'+
-            '<div><label class="field-label">Opción D</label><input type="text" id="tb-d" value="'+(data&&data.opciones?data.opciones[3]:'')+'" placeholder="Opción D"></div>'+
-          '</div>'+
-          '<div><label class="field-label">Respuesta correcta</label>'+
-            '<select id="tb-correcta">'+
-              ['A','B','C','D'].map(function(l,i){return '<option value="'+i+'"'+(data&&data.correcta===i?' selected':'')+'>'+l+'</option>';}).join('')+
-            '</select>'+
-          '</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-            '<div><label class="field-label">Materia</label><select id="tb-materia">'+materiaOpts+'</select></div>'+
-            '<div><label class="field-label">Trimestre</label><select id="tb-tri">'+cuatriOpts+'</select></div>'+
-          '</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-            '<div><label class="field-label">Tema / Unidad</label>'+
-              '<input type="text" id="tb-tema" value="'+(data&&data.tema?data.tema:'')+'" placeholder="Ej: Unidad 2 — Ventilación"></div>'+
-            '<div><label class="field-label">Dificultad</label>'+
-              '<select id="tb-dificultad">'+
-                ['facil','media','dificil'].map(function(d){
-                  return '<option value="'+d+'"'+(data&&data.dificultad===d?' selected':'')+'>'+d.charAt(0).toUpperCase()+d.slice(1)+'</option>';
-                }).join('')+
-              '</select>'+
-            '</div>'+
-          '</div>'+
-          '<div class="modal-footer">'+
-            '<button class="btn" onclick="closeTBModal()">Cancelar</button>'+
-            '<button class="btn btn-primary" onclick="teacherGuardarPregunta(\'+(id||\'\')+\')">'+( isEdit?'Guardar cambios':'Agregar pregunta')+'</button>'+
-          '</div>'+
-        '</div></div>'+
-      '</div></div>'
-    );
-  };
-
-  if(isEdit){
-    db.ref('banco/'+id).once('value').then(function(snap){ renderModal(snap.val()); });
-  } else {
-    renderModal(null);
-  }
-}
-
-function teacherEditarPregunta(id){ teacherOpenNuevaPregunta(id); }
-
-function closeTBModal(){ 
-  h('modal-root','');
-  h('tb-modal-root','');
-}
-
-function teacherGuardarPregunta(id){
-  var pregunta = g('tb-pregunta') ? g('tb-pregunta').value.trim() : '';
-  var a = g('tb-a') ? g('tb-a').value.trim() : '';
-  var b = g('tb-b') ? g('tb-b').value.trim() : '';
-  var cv = g('tb-c') ? g('tb-c').value.trim() : '';
-  var d = g('tb-d') ? g('tb-d').value.trim() : '';
-  var correcta = g('tb-correcta') ? parseInt(g('tb-correcta').value) : 0;
-  var materia = g('tb-materia') ? g('tb-materia').value : '';
-  var trimestre = g('tb-tri') ? g('tb-tri').value : 'todos';
-  var tema = g('tb-tema') ? g('tb-tema').value.trim() : '';
-  var dificultad = g('tb-dificultad') ? g('tb-dificultad').value : 'media';
-
-  if(!pregunta){ toast('Ingresá la pregunta','err'); return; }
-  if(!a||!b||!cv||!d){ toast('Completá las 4 opciones','err'); return; }
-
-  var data = {
-    pregunta: pregunta,
-    opciones: [a,b,cv,d],
-    correcta: correcta,
-    materia: materia,
-    trimestre: trimestre,
-    dificultad: dificultad,
-    creadoPor: STATE.profile.email,
-  };
-  if(tema) data.tema = tema;
-  if(id){ data.editadoEn = Date.now(); } else { data.creadoEn = Date.now(); }
-
-  var ref = id ? db.ref('banco/'+id) : db.ref('banco').push();
-  var op = id ? ref.update(data) : ref.set(data);
-  op.then(function(){
-    closeTBModal();
-    toast(id ? 'Pregunta actualizada' : '¡Pregunta agregada! ✓');
-    teacherBankLoad();
-  });
-}
-
-function teacherEliminarPregunta(id){
-  if(!confirm('¿Eliminar esta pregunta del banco?')) return;
-  db.ref('banco/'+id).remove().then(function(){
-    toast('Pregunta eliminada','info');
-    teacherBankLoad();
-  });
-}
-
-function teacherResults(){
-  var key = emailToKey(STATE.profile.email);
-  setTimeout(function(){ loadTeacherStats(key); }, 80);
-  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Resultados y Estadísticas</h1>'+
-    '</div>'+
-    '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="stats-overview">'+
-      '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(4)+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
-      '<div class="card" id="stats-tareas-card">'+
-        '<div class="card-title">Entregas de tareas</div>'+
-        '<div id="stats-tareas"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
-      '</div>'+
-      '<div class="card" id="stats-quiz-card">'+
-        '<div class="card-title">Resultados de Quiz</div>'+
-        '<div id="stats-quiz"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="card" style="margin-top:0" id="stats-alumnos-card">'+
-      '<div class="card-title">Desempeño por alumno</div>'+
-      '<div id="stats-alumnos"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
-    '</div>';
-}
-
-function loadTeacherStats(key){
-  // Load tasks created by this teacher
-  db.ref('tasks').once('value').then(function(tsnap){
-    var allTasks = [];
-    tsnap.forEach(function(child){ allTasks.push(Object.assign({id:child.key},child.val())); });
-    var myTasks = allTasks.filter(function(t){ return t.teacherKey===key; });
-
-    // Load all users (students)
+  db.ref('tasks/'+taskId).once('value').then(function(snap){
+    var task = snap.val(); if(!task) return;
     db.ref('users').once('value').then(function(usnap){
       var students = [];
       usnap.forEach(function(child){
-        var u = child.val();
-        if(u.role==='student') students.push(Object.assign({key:child.key},u));
+        var u=child.val();
+        if(u.role==='student'&&u.year===task.year) students.push(Object.assign({key:child.key},u));
       });
+      var subs = task.submissions||{};
+      var delivered = Object.keys(subs).length;
+      var corrected = Object.values(subs).filter(function(s){return s.corregido;}).length;
 
-      // Load quiz salas by this teacher (finished ones)
-      db.ref('salas').once('value').then(function(ssnap){
-        var salas = [];
-        ssnap.forEach(function(child){
-          var s = child.val();
-          if(s && s.docenteKey===key) salas.push(Object.assign({id:child.key},s));
-        });
-
-        renderTeacherStats(myTasks, students, salas);
-      }).catch(function(){ renderTeacherStats(myTasks, students, []); });
+      h('modal-root',
+        '<div class="overlay" onclick="closeModal()">'+
+        '<div class="modal" onclick="event.stopPropagation()" style="max-width:700px;overflow-y:auto">'+
+          '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+            '<span class="modal-title">Monitor: '+task.title+'</span>'+
+            '<button class="close-btn" onclick="closeModal()">×</button>'+
+          '</div>'+
+          '<div class="modal-body">'+
+          '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">'+
+            '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+delivered+'</div><div class="stat-lbl">Entregaron</div></div>'+
+            '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+corrected+'</div><div class="stat-lbl">Corregidas</div></div>'+
+            '<div class="stat-card"><div class="stat-val" style="color:#EF4444">'+(students.length-delivered)+'</div><div class="stat-lbl">Pendiente</div></div>'+
+            '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+task.totalPts+'</div><div class="stat-lbl">Pts máx</div></div>'+
+          '</div>'+
+          Object.entries(subs).map(function(e){
+            var skey=e[0], sub=e[1];
+            var stu = students.find(function(s){return s.key===skey;})||{name:sub.studentName||skey};
+            return '<div class="card" style="margin-bottom:10px">'+
+              '<div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">'+
+                avHtml(stu.name||sub.studentName||'?',32)+
+                '<div style="flex:1"><div style="font-weight:700">'+( stu.name||sub.studentName||skey)+'</div>'+
+                  '<div style="font-size:12px;color:#4B5563">'+fmtDateTime(sub.submittedAt)+(sub.reentregado?' · Re-entrega':'')+' · '+(sub.corregido?'<span style="color:#10B981">Corregida: '+sub.ptsTotal+' pts</span>':'<span style="color:#F59E0B">Sin corregir</span>')+'</div>'+
+                '</div>'+
+                '<button class="btn btn-primary btn-sm" onclick="teacherCorregirEntrega(''+taskId+'',''+skey+'')">'+( sub.corregido?'✏️ Re-corregir':'✅ Corregir')+'</button>'+
+              '</div>'+
+              // Show respuestas preview
+              '<div style="display:flex;flex-direction:column;gap:6px">'+
+              Object.entries(sub.respuestas||{}).map(function(re,ri){
+                var ci=parseInt(re[0]),resp=re[1];
+                var cor=sub.correcciones&&sub.correcciones[ci];
+                return '<div style="background:#080A0F;border-radius:7px;padding:8px 12px;font-size:12px">'+
+                  '<span style="color:#F97316;font-weight:700;font-family:monospace">C'+(ci+1)+'</span> '+
+                  '<span style="color:#9CA3AF">'+resp+'</span>'+
+                  (cor?'<span style="color:#10B981;margin-left:8px;font-weight:700">'+cor.pts+' pts</span>':'');
+              }).join('')+
+              '</div>'+
+            '</div>';
+          }).join('')+
+          (Object.keys(subs).length===0?'<p style="color:#374151;text-align:center;padding:20px">Ningún alumno entregó todavía.</p>':'')+
+          '<div class="modal-footer"><button class="btn" onclick="closeModal()">Cerrar</button></div>'+
+          '</div></div></div>'
+      );
     });
   });
 }
 
-function renderTeacherStats(tasks, students, salas){
-  // ── Overview stats ──
-  var totalEntregas = 0, totalPendientes = 0;
-  tasks.forEach(function(t){
-    var subs = Object.keys(t.submissions||{}).length;
-    totalEntregas += subs;
-  });
-  var studentsWithSubmissions = new Set();
-  tasks.forEach(function(t){
-    Object.keys(t.submissions||{}).forEach(function(k){ studentsWithSubmissions.add(k); });
-  });
+function teacherCorregirEntrega(taskId, studentKey){
+  db.ref('tasks/'+taskId).once('value').then(function(snap){
+    var task=snap.val(); if(!task) return;
+    var sub=task.submissions&&task.submissions[studentKey]; if(!sub) return;
+    var n=(task.consignas||[]).length;
+    var pts=task.ptsPorConsigna||Math.floor(1000/n);
 
-  var totalQuizParticipantes = 0;
-  salas.forEach(function(s){
-    totalQuizParticipantes += Object.keys(s.jugadores||{}).length;
-  });
-
-  var overview = g('stats-overview');
-  if(overview) overview.innerHTML =
-    '<div class="stat-card"><div class="stat-val" style="color:#F97316">'+tasks.length+'</div><div class="stat-lbl">Tareas creadas</div></div>'+
-    '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+totalEntregas+'</div><div class="stat-lbl">Entregas recibidas</div></div>'+
-    '<div class="stat-card"><div class="stat-val" style="color:#38BDF8">'+salas.length+'</div><div class="stat-lbl">Quiz realizados</div></div>'+
-    '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+totalQuizParticipantes+'</div><div class="stat-lbl">Participaciones quiz</div></div>';
-
-  // ── Tareas ──
-  var tareasEl = g('stats-tareas');
-  if(tareasEl){
-    if(tasks.length===0){
-      tareasEl.innerHTML = '<p style="color:#374151;font-size:13px;text-align:center;padding:16px">No creaste tareas aún.</p>';
-    } else {
-      tareasEl.innerHTML = tasks.slice(0,8).map(function(t){
-        var subs = Object.keys(t.submissions||{}).length;
-        var total = students.filter(function(s){ return s.year===t.year; }).length;
-        var pct = total>0 ? Math.round(subs/total*100) : 0;
-        var overdue = t.dueDate && t.dueDate < Date.now();
-        return '<div style="margin-bottom:12px">'+
-          '<div class="row" style="margin-bottom:5px">'+
-            '<span style="font-size:13px;font-weight:700;flex:1">'+t.title+'</span>'+
-            '<span style="font-size:12px;color:#4B5563">'+subs+'/'+(total||'?')+'</span>'+
-          '</div>'+
-          '<div style="display:flex;gap:6px;margin-bottom:5px">'+
-            '<span class="tag tag-teacher" style="font-size:9px">'+t.subject+'</span>'+
-            '<span class="tag '+(overdue?'tag-admin':'tag-student')+'" style="font-size:9px">'+(overdue?'Vencida':'Activa')+'</span>'+
-          '</div>'+
-          '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%"></div></div>'+
-          '<div style="font-size:11px;color:#4B5563;margin-top:3px">'+pct+'% entregado</div>'+
-        '</div>';
-      }).join('');
-    }
-  }
-
-  // ── Quiz ──
-  var quizEl = g('stats-quiz');
-  if(quizEl){
-    if(salas.length===0){
-      quizEl.innerHTML = '<p style="color:#374151;font-size:13px;text-align:center;padding:16px">No realizaste quizzes aún.</p>';
-    } else {
-      quizEl.innerHTML = salas.slice(-6).reverse().map(function(s){
-        var jugadores = Object.values(s.jugadores||{});
-        var pts = jugadores.map(function(j){return j.pts||0;});
-        var avg = pts.length>0 ? Math.round(pts.reduce(function(a,b){return a+b;},0)/pts.length) : 0;
-        var max = pts.length>0 ? Math.max.apply(null,pts) : 0;
-        return '<div style="margin-bottom:10px;padding:10px;background:#11141C;border-radius:8px;border:1px solid #1E2333">'+
-          '<div class="row" style="margin-bottom:4px">'+
-            '<span style="font-size:13px;font-weight:700;flex:1">'+s.materia+'</span>'+
-            '<span style="font-size:11px;color:#F97316;font-family:monospace">'+s.codigo+'</span>'+
-          '</div>'+
-          '<div style="font-size:12px;color:#4B5563">'+
-            jugadores.length+' jugadores · Promedio: <span style="color:#10B981;font-weight:700">'+avg+' pts</span>'+
-            (max>0?' · Máximo: <span style="color:#F59E0B;font-weight:700">'+max+' pts</span>':'')+
-          '</div>'+
-          '<div style="font-size:11px;color:#374151;margin-top:3px">'+new Date(s.creadaEn||Date.now()).toLocaleDateString('es-AR')+'</div>'+
-        '</div>';
-      }).join('');
-    }
-  }
-
-  // ── Alumnos ──
-  var alumnosEl = g('stats-alumnos');
-  if(alumnosEl){
-    // Get all students who interacted with this teacher's content
-    var alumnosMap = {};
-    tasks.forEach(function(t){
-      Object.entries(t.submissions||{}).forEach(function(entry){
-        var k=entry[0], sub=entry[1];
-        if(!alumnosMap[k]) alumnosMap[k]={nombre:sub.studentName||k,entregas:0,ptsQuiz:0};
-        alumnosMap[k].entregas++;
-      });
-    });
-    salas.forEach(function(s){
-      Object.entries(s.jugadores||{}).forEach(function(entry){
-        var k=entry[0], j=entry[1];
-        if(!alumnosMap[k]) alumnosMap[k]={nombre:j.nombre||k,entregas:0,ptsQuiz:0};
-        alumnosMap[k].ptsQuiz += (j.pts||0);
-      });
-    });
-
-    var alumList = Object.entries(alumnosMap).map(function(e){
-      return Object.assign({key:e[0]},e[1]);
-    }).sort(function(a,b){ return (b.entregas+b.ptsQuiz)-(a.entregas+a.ptsQuiz); });
-
-    if(alumList.length===0){
-      alumnosEl.innerHTML = '<p style="color:#374151;font-size:13px;text-align:center;padding:16px">Ningún alumno participó todavía.</p>';
-    } else {
-      alumnosEl.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
-        '<thead><tr style="border-bottom:1px solid #1E2333;color:#4B5563;font-size:11px;letter-spacing:1px">'+
-          '<th style="padding:8px 12px;text-align:left">ALUMNO</th>'+
-          '<th style="padding:8px 12px;text-align:center">ENTREGAS</th>'+
-          '<th style="padding:8px 12px;text-align:center">PTS QUIZ</th>'+
-          '<th style="padding:8px 12px;text-align:center">ACTIVIDAD</th>'+
-        '</tr></thead>'+
-        '<tbody>'+
-        alumList.map(function(a){
-          var actividad = a.entregas>0&&a.ptsQuiz>0?'Alta':a.entregas>0||a.ptsQuiz>0?'Media':'Baja';
-          var actColor = actividad==='Alta'?'#10B981':actividad==='Media'?'#F59E0B':'#EF4444';
-          return '<tr style="border-bottom:1px solid #1E233350">'+
-            '<td style="padding:10px 12px">'+avHtml(a.nombre,28)+'<span style="margin-left:8px;font-weight:600">'+a.nombre+'</span></td>'+
-            '<td style="padding:10px 12px;text-align:center;color:#F97316;font-weight:700">'+a.entregas+'</td>'+
-            '<td style="padding:10px 12px;text-align:center;color:#A78BFA;font-weight:700">'+a.ptsQuiz+'</td>'+
-            '<td style="padding:10px 12px;text-align:center"><span style="font-size:11px;padding:2px 10px;border-radius:20px;background:'+actColor+'18;color:'+actColor+';font-weight:700">'+actividad+'</span></td>'+
-          '</tr>';
-        }).join('')+
-        '</tbody></table></div>';
-    }
-  }
-}
-
-// ══════════════════════════════════════════════════
-// STUDENT
-// ══════════════════════════════════════════════════
-function renderStudent(){
-  if(!STATE.profile.year){renderStudentYearSelect();return;}
-  var tabs=[
-    {id:"dashboard",icon:"🏠",label:"Inicio"},
-    {id:"tasks",icon:"📋",label:"Tareas"},
-    {id:"quiz",icon:"⚡",label:"Quiz"},
-    {id:"ranking",icon:"🏆",label:"Ranking"},
-    {id:"profile",icon:"👤",label:"Perfil"},
-  ];
-  g("app").innerHTML=
-    buildSidebar(tabs,'<div class="pts-badge" style="font-size:10px;padding:2px 8px;margin-top:2px">⭐ '+(STATE.profile.points||0)+' pts</div>')+
-    buildMobileHeader(STATE.profile.year+' · EET N°23')+
-    buildBottomNav(tabs)+
-    '<div class="main-content" id="main-panel"></div>';
-  setTimeout(renderStudentTab,50);
-}
-
-function renderStudentYearSelect(){
-  g("app").innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">'+
-    '<div class="card pop" style="max-width:480px;width:100%;text-align:center;padding:32px">'+
-    '<div style="font-size:44px;margin-bottom:14px">🎓</div>'+
-    '<h2 style="font-family:\'Rajdhani\',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px">¡Bienvenido, '+STATE.profile.name.split(" ")[0]+'!</h2>'+
-    '<p style="color:#4B5563;font-size:14px;margin-bottom:24px">¿En qué año estás cursando la carrera de MMO?</p>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">'+
-    YEARS.map(function(yr,i){
-      var cols=["#F97316","#10B981","#F59E0B","#A78BFA","#38BDF8","#EC4899","#34D399"];
-      var c=cols[i%cols.length];
-      return '<button onclick="selectYear(\''+yr+'\')" style="padding:16px;border-radius:10px;border:1px solid '+c+'30;background:'+c+'12;color:'+c+';font-weight:700;font-size:14px;cursor:pointer">'+yr+'</button>';
-    }).join("")+
-    '</div>'+
-    '<button onclick="logout()" style="background:none;border:none;color:#374151;font-size:12px;cursor:pointer;text-decoration:underline">Salir</button>'+
-    '</div></div>';
-}
-
-function selectYear(yr){
-  var key=emailToKey(STATE.profile.email);
-  db.ref("users/"+key).update({year:yr}).then(function(){
-    STATE.profile.year=yr;renderStudent();toast("¡Listo! Bienvenido a "+yr);
-  });
-}
-
-function renderStudentTab(){
-  var fns={"dashboard":studentDashboard,"tasks":studentTasks,"quiz":studentQuiz,"ranking":studentRanking,"profile":studentProfile};
-  h("main-panel","<div class='fu'>"+(fns[STATE.tab]?fns[STATE.tab]():"")+"</div>");
-  if(STATE.tab==="tasks") loadStudentTasks();
-  if(STATE.tab==="ranking") loadRanking();
-  if(STATE.tab==="dashboard") loadStudentDashboard();
-}
-
-function studentDashboard(){
-  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<div><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">¡Hola, '+STATE.profile.name.split(" ")[0]+'! 👋</h1>'+
-    '<p style="color:#4B5563;font-size:13px">'+STATE.profile.year+' · EET N°23</p></div>'+
-    '<span class="sp"></span>'+
-    '<div class="pts-badge">⭐ '+(STATE.profile.points||0).toLocaleString()+' pts</div>'+
-    '</div>'+
-    '<div class="stat-grid" id="student-stats">'+
-    '<div class="stat-card"><div class="spin-el" style="margin:0 auto"></div></div>'.repeat(3)+
-    '</div>'+
-    '<div class="card" id="pending-tasks-card">'+
-      '<div class="card-title">Tareas pendientes</div>'+
-      '<div id="pending-tasks"><div class="spin-el" style="margin:0 auto;display:block"></div></div>'+
-    '</div>'+
-    '<div class="card">'+
-      '<div class="card-title">Próximos eventos</div>'+
-      '<div style="display:flex;flex-direction:column;gap:10px">'+
-      '<div style="background:#F59E0B14;border:1px solid #F59E0B30;border-radius:9px;padding:12px 14px;display:flex;gap:10px;align-items:center">'+
-        '<span style="font-size:22px">🏆</span>'+
-        '<div><div style="font-size:13px;font-weight:700">Torneo semanal</div>'+
-        '<div style="font-size:12px;color:#F59E0B">Cada viernes · +500 pts</div></div>'+
-      '</div>'+
-      '<div style="background:#38BDF814;border:1px solid #38BDF830;border-radius:9px;padding:12px 14px;display:flex;gap:10px;align-items:center">'+
-        '<span style="font-size:22px">⚡</span>'+
-        '<div><div style="font-size:13px;font-weight:700">Quiz en Vivo</div>'+
-        '<div style="font-size:12px;color:#38BDF8">Cuando el docente lo active</div></div>'+
-      '</div>'+
-      '</div>'+
-    '</div>';
-}
-
-function loadStudentDashboard(){
-  var key=emailToKey(STATE.profile.email);
-  db.ref("tasks").orderByChild("year").equalTo(STATE.profile.year).once("value").then(function(snap){
-    var tasks=Object.entries(snap.val()||{}).map(function(e){return Object.assign({id:e[0]},e[1]);});
-    var now=Date.now();
-    var pending=tasks.filter(function(t){return t.status==="active"&&(!t.submissions||!t.submissions[key]);});
-    var done=tasks.filter(function(t){return t.submissions&&t.submissions[key];});
-    var el=g("student-stats");
-    if(el) el.innerHTML=
-      '<div class="stat-card"><div class="stat-val" style="color:#EF4444">'+pending.length+'</div><div class="stat-lbl">Pendientes</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#10B981">'+done.length+'</div><div class="stat-lbl">Completadas</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(STATE.profile.streak||0)+'</div><div class="stat-lbl">Racha</div></div>';
-    var ptEl=g("pending-tasks");if(!ptEl)return;
-    if(pending.length===0){
-      ptEl.innerHTML='<div style="text-align:center;padding:20px;color:#10B981"><span style="font-size:28px">✅</span><br><span style="font-size:13px">¡Todo al día!</span></div>';
-    } else {
-      ptEl.innerHTML=pending.slice(0,4).map(function(t){
-        var isOverdue=t.dueDate&&t.dueDate<now;
-        return '<div class="task-row" onclick="setTab(\'tasks\')" style="cursor:pointer">'+
-          '<span style="font-size:20px">'+(isOverdue?"🔴":"🟡")+'</span>'+
-          '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+t.title+'</div>'+
-          '<div style="font-size:11px;color:'+(isOverdue?"#EF4444":"#4B5563")+'">'+(t.dueDate?("Vence: "+fmtDate(t.dueDate)):"Sin fecha límite")+'</div></div>'+
-          '<span style="color:#374151">›</span>'+
-        '</div>';
-      }).join("")+
-      (pending.length>4?'<div style="text-align:center;margin-top:8px"><button class="btn btn-sm btn-full" onclick="setTab(\'tasks\')">Ver todas ('+pending.length+')</button></div>':'');
-    }
-  });
-}
-
-function studentTasks(){
-  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mis Tareas</h1></div>'+
-    '<div id="student-tasks-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
-}
-
-function loadStudentTasks(){
-  var key=emailToKey(STATE.profile.email);
-  db.ref("tasks").orderByChild("year").equalTo(STATE.profile.year).once("value").then(function(snap){
-    var tasks=Object.entries(snap.val()||{}).map(function(e){return Object.assign({id:e[0]},e[1]);});
-    tasks.sort(function(a,b){return(b.dueDate||0)-(a.dueDate||0);});
-    var el=g("student-tasks-list");if(!el)return;
-    if(tasks.length===0){
-      el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:#374151">No hay tareas para tu curso todavía.</div>';return;
-    }
-    var now=Date.now();
-    el.innerHTML=tasks.map(function(t){
-      var submitted=t.submissions&&t.submissions[key];
-      var isOverdue=t.dueDate&&t.dueDate<now&&!submitted;
-      var sc=submitted?"#10B981":isOverdue?"#EF4444":"#F59E0B";
-      var sl=submitted?"✅ Entregado":isOverdue?"❌ Vencida":"⏳ Pendiente";
-      return '<div class="card">'+
-        '<div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:6px">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">'+t.title+'</div>'+
-          '<div style="font-size:12px;color:#4B5563">'+t.subject+' · '+t.teacherName+'</div></div>'+
-          '<span style="font-size:11px;background:'+sc+'18;color:'+sc+';border:1px solid '+sc+'30;padding:3px 10px;border-radius:5px;font-weight:700">'+sl+'</span>'+
+    var html='<div class="overlay" onclick="closeModal()">'+
+      '<div class="modal" onclick="event.stopPropagation()" style="max-width:680px;overflow-y:auto">'+
+        '<div class="modal-header" style="position:sticky;top:0;background:#0F1117;z-index:2">'+
+          '<span class="modal-title">Corregir: '+(sub.studentName||studentKey)+'</span>'+
+          '<button class="close-btn" onclick="closeModal()">×</button>'+
         '</div>'+
-        (t.description?'<p style="font-size:13px;color:#9CA3AF;margin-bottom:10px">'+t.description+'</p>':'')+
-        '<div class="row" style="flex-wrap:wrap;gap:8px">'+
-          (t.dueDate?'<span style="font-size:12px;color:#4B5563">📅 '+fmtDateTime(t.dueDate)+'</span>':'')+
+        '<div class="modal-body">';
+
+    (task.consignas||[]).forEach(function(q,i){
+      var resp=(sub.respuestas&&sub.respuestas[i])||'(Sin respuesta)';
+      var prevCor=sub.correcciones&&sub.correcciones[i];
+      html+='<div style="background:#11141C;border:1px solid #1E2333;border-radius:10px;padding:14px;margin-bottom:12px">'+
+        '<div class="row" style="margin-bottom:8px">'+
+          '<span style="font-size:12px;font-weight:700;color:#F97316;font-family:monospace">CONSIGNA '+(i+1)+'</span>'+
           '<span class="sp"></span>'+
-          (!submitted?'<button class="btn btn-primary btn-sm" onclick="submitTask(\''+t.id+'\')">✓ Entregar</button>':'<span style="font-size:12px;color:#10B981">Entregado '+fmtDateTime(t.submissions[key].submittedAt)+'</span>')+
+          '<span style="font-size:11px;color:#4B5563">Máx '+pts+' pts</span>'+
+        '</div>'+
+        '<div style="font-size:13px;font-weight:600;color:#F0EDE8;margin-bottom:8px">'+q+'</div>'+
+        '<div style="background:#080A0F;border:1px solid #1E2333;border-radius:8px;padding:10px;font-size:13px;color:#9CA3AF;margin-bottom:10px">'+resp+'</div>'+
+        '<div style="display:grid;grid-template-columns:100px 1fr;gap:10px">'+
+          '<div><label class="field-label">Puntos</label>'+
+            '<input type="number" id="cor-pts-'+i+'" min="0" max="'+pts+'" value="'+(prevCor?prevCor.pts:pts)+'" style="width:100%"></div>'+
+          '<div><label class="field-label">Feedback <span style="color:#374151;font-weight:400">(opcional)</span></label>'+
+            '<input type="text" id="cor-fb-'+i+'" value="'+(prevCor&&prevCor.feedback?prevCor.feedback:'')+'" placeholder="Comentario al alumno..."></div>'+
         '</div>'+
       '</div>';
-    }).join("");
+    });
+
+    html+='<div id="cor-total" style="background:#F9731618;border:1px solid #F9731630;border-radius:8px;padding:12px;text-align:center;font-size:14px;font-weight:700;color:#F97316;margin-bottom:14px">'+
+      'Total: calculando...</div>'+
+      '<div class="modal-footer">'+
+        '<button class="btn" onclick="closeModal()">Cancelar</button>'+
+        '<button class="btn btn-primary" onclick="guardarCorreccion(''+taskId+'',''+studentKey+'','+n+','+pts+')">Guardar corrección</button>'+
+      '</div>'+
+    '</div></div></div>';
+
+    h('modal-root',html);
+
+    // Live total calculation
+    setTimeout(function(){
+      for(var j=0;j<n;j++){
+        var el=g('cor-pts-'+j);
+        if(el) el.addEventListener('input',function(){ calcCorTotal(n); });
+      }
+      calcCorTotal(n);
+    },100);
   });
 }
 
-function submitTask(taskId){
-  var key=emailToKey(STATE.profile.email);
-  var now=Date.now();
-  db.ref("tasks/"+taskId).once("value").then(function(snap){
-    var task=snap.val();if(!task)return;
-    var onTime=!task.dueDate||task.dueDate>=now;
-    var pts=onTime?300:100;
-    db.ref("tasks/"+taskId+"/submissions/"+key).set({submittedAt:now,onTime:onTime,studentName:STATE.profile.name});
-    var newPts=(STATE.profile.points||0)+pts;
-    STATE.profile.points=newPts;
-    db.ref("users/"+key).update({points:newPts});
-    toast("¡Entregada! +"+(onTime?"300":"100")+" pts "+(onTime?"🎉":""));
-    loadStudentTasks();
+function calcCorTotal(n){
+  var total=0;
+  for(var i=0;i<n;i++){
+    var el=g('cor-pts-'+i);
+    total+=(el?parseInt(el.value)||0:0);
+  }
+  var ct=g('cor-total');
+  if(ct) ct.textContent='Total: '+total+' / 1000 pts';
+}
+
+function guardarCorreccion(taskId, studentKey, n, maxPts){
+  var correcciones={}, total=0;
+  for(var i=0;i<n;i++){
+    var p=parseInt(g('cor-pts-'+i)?g('cor-pts-'+i).value:0)||0;
+    var f=g('cor-fb-'+i)?g('cor-fb-'+i).value.trim():'';
+    p=Math.max(0,Math.min(maxPts,p));
+    correcciones[i]={pts:p,feedback:f};
+    total+=p;
+  }
+  var updates={};
+  updates['tasks/'+taskId+'/submissions/'+studentKey+'/correcciones']=correcciones;
+  updates['tasks/'+taskId+'/submissions/'+studentKey+'/ptsTotal']=total;
+  updates['tasks/'+taskId+'/submissions/'+studentKey+'/corregido']=true;
+  updates['tasks/'+taskId+'/submissions/'+studentKey+'/corregidoEn']=Date.now();
+
+  // Add points to student global ranking
+  var newPts=(STATE.profile.points||0);
+  db.ref('users/'+studentKey+'/points').transaction(function(cur){return (cur||0)+total;});
+
+  db.ref().update(updates).then(function(){
+    closeModal();
+    toast('Corrección guardada · '+total+' pts asignados ✓');
   });
 }
 
-// studentQuiz defined in quiz module below
 
-function studentRanking(){
-  return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
-    '<h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Ranking</h1>'+
-    '<span class="sp"></span>'+
-    '<span class="tag tag-gold">'+new Date().toLocaleString("es-AR",{month:"long",year:"numeric"}).toUpperCase()+'</span>'+
-    '</div>'+
-    '<div id="ranking-list"><div style="text-align:center;padding:32px"><div class="spin-el" style="margin:0 auto"></div></div></div>';
-}
-
-function studentProfile(){
-  var p=STATE.profile;
-  return '<div class="row page-header" style="margin-bottom:18px"><h1 style="font-family:\'Rajdhani\',sans-serif;font-size:22px;font-weight:700">Mi Perfil</h1></div>'+
-    '<div class="card" style="text-align:center;padding:24px">'+
-      avHtml(p.name,64,"margin:0 auto 12px")+
-      '<div style="font-size:18px;font-weight:700;margin-bottom:4px">'+p.name+'</div>'+
-      '<div style="font-size:13px;color:#4B5563;margin-bottom:10px">'+p.email+'</div>'+
-      '<span class="tag tag-student">ALUMNO</span>'+
-    '</div>'+
-    '<div class="stat-grid" style="grid-template-columns:1fr 1fr">'+
-      '<div class="stat-card"><div class="stat-val" style="color:#F59E0B">'+(p.points||0).toLocaleString()+'</div><div class="stat-lbl">Puntos</div></div>'+
-      '<div class="stat-card"><div class="stat-val" style="color:#A78BFA">'+(p.streak||0)+'</div><div class="stat-lbl">Racha días</div></div>'+
-    '</div>'+
-    '<div class="card">'+
-      '<div class="card-title">Información</div>'+
-      '<div style="display:flex;flex-direction:column;gap:10px">'+
-        '<div class="row"><span style="color:#4B5563;font-size:13px;flex:1">Año</span><span style="font-size:13px;font-weight:700">'+p.year+'</span></div>'+
-        '<div class="row"><span style="color:#4B5563;font-size:13px;flex:1">Miembro desde</span><span style="font-size:13px">'+fmtDate(p.createdAt)+'</span></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="card">'+
-      '<div class="card-title">Cambiar año</div>'+
-      '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-      YEARS.map(function(yr){
-        var isActive=yr===p.year;
-        return '<button onclick="selectYear(\''+yr+'\')" style="padding:8px 12px;border-radius:7px;border:1px solid '+(isActive?"#F97316":"#1E2333")+';background:'+(isActive?"#F9731618":"#11141C")+';color:'+(isActive?"#F97316":"#6B7280")+';font-size:12px;font-weight:700;cursor:pointer">'+yr+'</button>';
-      }).join("")+
-      '</div>'+
-    '</div>';
-}
-
-
-// ══════════════════════════════════════════════════
-// QUIZ EN VIVO — MÓDULO COMPLETO
-// ══════════════════════════════════════════════════
-
-// ── Banco de preguntas por materia ─────────────────
-var QUESTION_BANK = {
-  "Instalaciones Térmicas": [
-    {q:"¿Qué significa HR en psicrometría?",opts:["Humedad Relativa","Humedad Real","Humedad Residual","Humedad Regulada"],a:0},
-    {q:"¿Cuál es la temperatura de confort térmico según IRAM?",opts:["18-20°C","20-26°C","15-18°C","26-30°C"],a:1},
-    {q:"¿Qué es el coeficiente K de transmitancia?",opts:["Pérdida de calor por m²·°C","Ganancia solar","Caudal de aire","Presión de vapor"],a:0},
-    {q:"¿Qué norma regula instalaciones de gas en Argentina?",opts:["NAG 100","NAG 200","IRAM 11601","AEA 90364"],a:1},
-    {q:"¿VMC significa?",opts:["Ventilación Mecánica Controlada","Válvula de Máxima Capacidad","Velocidad Media de Circulación","Volumen Máximo de Calor"],a:0},
-    {q:"¿Qué es el punto de rocío?",opts:["T° a la que el vapor condensa","Presión mínima del sistema","Humedad máxima posible","Temperatura de evaporación"],a:0},
-    {q:"¿Qué tipo de calefacción usa agua caliente como fluido?",opts:["Calefacción radiante","Calefacción por radiadores","Calefacción por aire forzado","Calefacción eléctrica"],a:1},
-    {q:"¿Cuánto es 1 kcal en Joules?",opts:["4186 J","1000 J","2500 J","3600 J"],a:0},
-    {q:"¿Qué es el balance térmico?",opts:["Equilibrio entre ganancias y pérdidas de calor","Temperatura promedio anual","Diferencia de presiones","Caudal de ventilación"],a:0},
-    {q:"¿La norma IRAM 11605 regula?",opts:["Acondicionamiento térmico de edificios","Instalaciones de gas","Ventilación industrial","Calefacción central"],a:0},
-  ],
-  "Instalaciones Electromecánicas": [
-    {q:"¿Cuál es la tensión de red monofásica en Argentina?",opts:["110V","127V","220V","380V"],a:2},
-    {q:"¿Qué es la acometida eléctrica?",opts:["Conexión entre red pública y instalación","Tablero principal","Puesta a tierra","Medidor de energía"],a:0},
-    {q:"¿Qué norma regula instalaciones eléctricas en Argentina?",opts:["AEA 90364","NAG 200","IRAM 2244","IEC 60364"],a:0},
-    {q:"Según Ley de Ohm, V = ?",opts:["I × R","I / R","R / I","I + R"],a:0},
-    {q:"¿Qué color identifica al conductor de tierra en instalaciones?",opts:["Verde-amarillo","Azul","Negro","Rojo"],a:0},
-    {q:"¿Qué protege un disyuntor diferencial?",opts:["Personas contra electrocución","Equipos contra cortocircuito","Motores contra sobrecarga","Cables contra calentamiento"],a:0},
-    {q:"¿Qué es la potencia activa?",opts:["Potencia que realiza trabajo útil","Potencia reactiva del sistema","Potencia aparente total","Potencia de pérdidas"],a:0},
-    {q:"La tensión trifásica de línea en Argentina es:",opts:["220V","380V","440V","110V"],a:1},
-    {q:"¿Qué es un tablero seccional?",opts:["Tablero secundario que alimenta circuitos parciales","Tablero principal de medición","Protección general del edificio","Caja de empalmes"],a:0},
-    {q:"¿Cuántos watts consume una lámpara de 220V y 2A?",opts:["440W","110W","220W","880W"],a:0},
-  ],
-  "Construcciones": [
-    {q:"¿Qué es un cimiento?",opts:["Elemento que transfiere cargas al suelo","Viga horizontal","Columna de hormigón","Muro de contención"],a:0},
-    {q:"¿Qué relación agua/cemento mejora la resistencia del hormigón?",opts:["Menor relación, mayor resistencia","Mayor relación, mayor resistencia","No influye","Igual relación siempre"],a:0},
-    {q:"¿Qué es el slump test?",opts:["Medición de consistencia del hormigón","Ensayo de resistencia","Prueba de impermeabilidad","Test de durabilidad"],a:0},
-    {q:"¿Para qué sirve la armadura en el hormigón armado?",opts:["Resistir tensiones de tracción","Aumentar compresión","Reducir peso","Mejorar aislación"],a:0},
-    {q:"¿Qué es un dintel?",opts:["Elemento sobre vano que distribuye cargas","Base de columna","Unión entre muros","Remate de cubierta"],a:0},
-  ],
-  "Matemática": [
-    {q:"¿Cuánto es sen(90°)?",opts:["0","1","-1","0.5"],a:1},
-    {q:"¿Cuánto es la derivada de x²?",opts:["2x","x","x²","2"],a:0},
-    {q:"¿Qué es una función inyectiva?",opts:["Cada elemento del dominio tiene imagen única","Función constante","Función periódica","Función discontinua"],a:0},
-    {q:"¿Cuánto es log₁₀(100)?",opts:["1","2","10","0.1"],a:1},
-    {q:"¿Cuánto es cos(0°)?",opts:["0","1","-1","0.5"],a:1},
-  ],
-};
-
-// Preguntas genéricas para materias sin banco específico
-var GENERIC_QUESTIONS = [
-  {q:"¿Cuál es la unidad de medida de la fuerza en el SI?",opts:["Newton","Joule","Pascal","Watt"],a:0},
-  {q:"¿Qué es la densidad?",opts:["Masa por unidad de volumen","Volumen por unidad de masa","Fuerza por unidad de área","Energía por unidad de tiempo"],a:0},
-  {q:"¿Cuántos grados tiene un triángulo?",opts:["90°","270°","180°","360°"],a:2},
-  {q:"¿Qué es un vector?",opts:["Magnitud con dirección y sentido","Solo magnitud","Solo dirección","Ángulo de rotación"],a:0},
-  {q:"¿Cuál es la fórmula del área del círculo?",opts:["π·r²","2·π·r","π·d","r²"],a:0},
-  {q:"¿Qué es la presión atmosférica estándar?",opts:["101325 Pa","100000 Pa","98000 Pa","760 Pa"],a:0},
-  {q:"¿Cuánto es 1 kW en watts?",opts:["100W","1000W","10000W","10W"],a:1},
-  {q:"¿Qué es la energía cinética?",opts:["Energía del movimiento","Energía almacenada","Energía eléctrica","Energía térmica"],a:0},
-  {q:"¿Cuál es la velocidad de la luz en el vacío?",opts:["3×10⁸ m/s","3×10⁶ m/s","3×10¹⁰ m/s","3×10⁴ m/s"],a:0},
-  {q:"¿Qué es la resistencia eléctrica?",opts:["Oposición al flujo de corriente","Flujo de electrones","Diferencia de potencial","Potencia consumida"],a:0},
-];
-
-function getQuestions(materia, count){
-  var pool = QUESTION_BANK[materia] || GENERIC_QUESTIONS;
-  var shuffled = pool.slice().sort(function(){return Math.random()-.5;});
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-}
-
-function genCode(){
-  var letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  var digits = '0123456789';
-  var code = '';
-  for(var i=0;i<3;i++) code += letters[Math.floor(Math.random()*letters.length)];
-  code += '-';
-  for(var i=0;i<3;i++) code += digits[Math.floor(Math.random()*digits.length)];
-  return code;
-}
-
-// ── ESTADO DEL QUIZ ───────────────────────────────
-var QUIZ = {
-  salaRef: null,
-  codigo: null,
-  unsubscribe: null,
-  timer: null,
-  tiempoRespuesta: null,
-};
-
-// ══════════════════════════════════════════════════
-// PANEL DOCENTE — QUIZ EN VIVO
-// ══════════════════════════════════════════════════
 function teacherQuiz(){
   var key = emailToKey(STATE.profile.email);
   return '<div class="row page-header" style="margin-bottom:18px;flex-wrap:wrap;gap:8px">'+
