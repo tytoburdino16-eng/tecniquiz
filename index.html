@@ -1687,14 +1687,25 @@ function teacherCrearSala(){
   var btn = document.querySelector('#quiz-modal-root .btn-primary');
   if(btn){ btn.textContent='Cargando preguntas...'; btn.disabled=true; }
 
-  // Leer preguntas del banco Firebase para esa materia
+  var trimestre = g('qs-trimestre') ? g('qs-trimestre').value : 'todos';
+  var anio = g('qs-anio') ? g('qs-anio').value : 'todos';
+  var tema = g('qs-tema') ? g('qs-tema').value.trim().toLowerCase() : '';
+
+  // Leer preguntas del banco Firebase con filtros
   db.ref('banco').once('value').then(function(snap){
     var pool = [];
     snap.forEach(function(child){
       var p = child.val();
-      if(p && p.materia && p.materia.trim().toLowerCase() === materia.trim().toLowerCase()){
-        pool.push(p);
-      }
+      if(!p || !p.materia) return;
+      // Filtro materia
+      if(p.materia.trim().toLowerCase() !== materia.trim().toLowerCase()) return;
+      // Filtro trimestre
+      if(trimestre !== 'todos' && p.trimestre && p.trimestre !== 'todos' && p.trimestre !== trimestre) return;
+      // Filtro año
+      if(anio !== 'todos' && p.anio && p.anio !== 'todos' && p.anio !== anio) return;
+      // Filtro tema (búsqueda parcial)
+      if(tema && p.tema && !p.tema.toLowerCase().includes(tema)) return;
+      pool.push(p);
     });
 
     // Si no hay en Firebase, usar banco local
@@ -1728,6 +1739,9 @@ function teacherCrearSala(){
     var sala = {
       codigo: codigo,
       materia: materia,
+      trimestre: trimestre !== 'todos' ? trimestre : null,
+      anio: anio !== 'todos' ? anio : null,
+      tema: tema || null,
       docente: STATE.profile.name,
       docenteKey: key,
       estado: 'waiting',
@@ -1741,7 +1755,8 @@ function teacherCrearSala(){
 
     db.ref('salas/'+codigo).set(sala).then(function(){
       closeQModal();
-      toast('Sala '+codigo+' creada · '+preguntas.length+' preguntas de '+materia);
+      var filtroInfo = [materia, trimestre!=='todos'?trimestre:'', anio!=='todos'?anio:'', tema].filter(Boolean).join(' · ');
+    toast('Sala '+codigo+' creada · '+preguntas.length+' preguntas · '+filtroInfo);
       teacherMonitorSala(codigo);
     });
   });
@@ -1790,7 +1805,12 @@ function teacherMonitorSala(codigo){
     var respuestas = sala.respuestas && sala.preguntaActual >= 0
       ? Object.keys(sala.respuestas['p'+sala.preguntaActual]||{}).length : 0;
 
-    h('sala-materia-label', sala.materia+' · '+sala.preguntas.length+' preguntas · '+sala.timerSeg+'s por pregunta');
+    var salaInfo = sala.materia;
+    if(sala.trimestre) salaInfo += ' · '+sala.trimestre;
+    if(sala.anio) salaInfo += ' · '+sala.anio;
+    if(sala.tema) salaInfo += ' · '+sala.tema;
+    salaInfo += ' · '+sala.preguntas.length+' preguntas · '+sala.timerSeg+'s';
+    h('sala-materia-label', salaInfo);
     h('sala-jugadores', jugadores.length);
     h('sala-pregunta', sala.preguntaActual >= 0 ? (sala.preguntaActual+1)+'/'+sala.preguntas.length : '—');
     h('sala-respuestas', respuestas);
@@ -2500,14 +2520,30 @@ function teacherOpenImportCSV(){
             '• trimestre: 1° Trimestre / 2° Trimestre / 3° Trimestre / Anual'+
           '</div>'+
         '</div>'+
-        '<div style="margin-bottom:14px">'+
-          '<label class="field-label">Materia destino</label>'+
-          '<select id="csv-materia" style="width:100%">'+
-            '<option value="">— Usar la del archivo CSV —</option>'+
-            (window._teacherMaterias||[]).map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('')+
-          '</select>'+
-          '<div style="font-size:11px;color:#4B5563;margin-top:4px">Si seleccionás una materia acá, todas las preguntas importadas quedarán bajo esa materia.</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'+
+          '<div>'+
+            '<label class="field-label">Materia</label>'+
+            '<select id="csv-materia" style="width:100%">'+
+              '<option value="">— Del CSV —</option>'+
+              (window._teacherMaterias||BANK_MATERIAS.slice(0,10)).map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('')+
+            '</select>'+
+          '</div>'+
+          '<div>'+
+            '<label class="field-label">Trimestre</label>'+
+            '<select id="csv-trimestre" style="width:100%">'+
+              '<option value="">— Del CSV —</option>'+
+              ['1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('')+
+            '</select>'+
+          '</div>'+
+          '<div>'+
+            '<label class="field-label">Año</label>'+
+            '<select id="csv-anio" style="width:100%">'+
+              '<option value="">— Del CSV —</option>'+
+              YEARS.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('')+
+            '</select>'+
+          '</div>'+
         '</div>'+
+        '<div style="font-size:11px;color:#4B5563;margin-bottom:14px">Si seleccionás valores acá, sobreescriben lo que diga el archivo CSV.</div>'+
         '<div style="margin-bottom:14px">'+
           '<label class="field-label">Seleccionar archivo CSV</label>'+
           '<input type="file" id="csv-file" accept=".csv,.txt" style="width:100%;padding:10px;background:#080A0F;border:1.5px solid #1E2333;border-radius:8px;color:#F0EDE8;cursor:pointer">'+
@@ -2707,6 +2743,8 @@ function csvDoImport(){
   if(btn){ btn.textContent='Importando...'; btn.disabled=true; }
 
   var materiaOverride = g('csv-materia') ? g('csv-materia').value.trim() : '';
+  var trimestreOverride = g('csv-trimestre') ? g('csv-trimestre').value.trim() : '';
+  var anioOverride = g('csv-anio') ? g('csv-anio').value.trim() : '';
   var updates = {};
   CSV_PARSED.forEach(function(pq){
     var ref = db.ref('banco').push().key;
@@ -2715,7 +2753,8 @@ function csvDoImport(){
       opciones: pq.opciones,
       correcta: pq.correcta,
       materia: materiaOverride || pq.materia || (window._teacherMaterias&&window._teacherMaterias[0]) || 'General',
-      trimestre: pq.trimestre || 'todos',
+      trimestre: trimestreOverride || pq.trimestre || 'todos',
+      anio: anioOverride || pq.anio || 'todos',
       tema: pq.tema || '',
       dificultad: pq.dificultad || 'media',
       creadoPor: STATE.profile.email,
