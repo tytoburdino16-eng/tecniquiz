@@ -925,14 +925,18 @@ function teacherBankLoad(){
     var todas = [];
     snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
 
-    // Solo las de mis materias
-    var mias = todas.filter(function(p){ return materias.indexOf(p.materia)>=0; });
+    // Solo las de mis materias (comparación flexible)
+    var mias = todas.filter(function(p){
+      if(!p.materia) return false;
+      var pm = p.materia.trim().toLowerCase();
+      return materias.some(function(m){ return m.trim().toLowerCase() === pm; });
+    });
     var totalMias = mias.length;
 
     // Aplicar filtros
     var filtered = mias.filter(function(p){
-      var matchM = filtroM==='todas' || p.materia===filtroM;
-      var matchC = filtroT==='todos' || p.trimestre===filtroT;
+      var matchM = filtroM==='todas' || (p.materia&&p.materia.trim().toLowerCase()===filtroM.trim().toLowerCase());
+      var matchC = filtroT==='todos' || !p.trimestre || p.trimestre==='todos' || p.trimestre===filtroT;
       var matchS = !search || p.pregunta.toLowerCase().includes(search);
       return matchM && matchC && matchS;
     });
@@ -1456,8 +1460,12 @@ function checkBancoMateria(materia){
   var info = g('qs-banco-info');
   if(!info) return;
   info.textContent = 'Verificando banco...';
-  db.ref('banco').orderByChild('materia').equalTo(materia).once('value').then(function(snap){
-    var count = snap.numChildren();
+  db.ref('banco').once('value').then(function(snap){
+    var count = 0;
+    snap.forEach(function(child){
+      var p = child.val();
+      if(p && p.materia && p.materia.trim().toLowerCase()===materia.trim().toLowerCase()) count++;
+    });
     if(count === 0){
       info.innerHTML = '<span style="color:#EF4444">⚠ Sin preguntas en Firebase para esta materia. Se usarán preguntas locales.</span>';
     } else {
@@ -1477,9 +1485,14 @@ function teacherCrearSala(){
   if(btn){ btn.textContent='Cargando preguntas...'; btn.disabled=true; }
 
   // Leer preguntas del banco Firebase para esa materia
-  db.ref('banco').orderByChild('materia').equalTo(materia).once('value').then(function(snap){
+  db.ref('banco').once('value').then(function(snap){
     var pool = [];
-    snap.forEach(function(child){ pool.push(child.val()); });
+    snap.forEach(function(child){
+      var p = child.val();
+      if(p && p.materia && p.materia.trim().toLowerCase() === materia.trim().toLowerCase()){
+        pool.push(p);
+      }
+    });
 
     // Si no hay en Firebase, usar banco local
     if(pool.length === 0){
@@ -2321,12 +2334,29 @@ function csvPreview(e){
     if(!preview||!previewTitle||!previewList||!importBtn) return;
 
     if(CSV_PARSED.length === 0){
-      previewTitle.textContent = '⚠ No se encontraron preguntas válidas';
+      var rawText2 = ev.target.result.replace(/^\uFEFF/,'');
+      var lineCount = rawText2.split(/\r?\n/).filter(function(l){return l.trim().length>3;}).length;
+      var firstLine2 = rawText2.split(/\r?\n/).find(function(l){return l.trim().length>3;})||'';
+      var colCount = Math.max((firstLine2.match(/;/g)||[]).length,(firstLine2.match(/,/g)||[]).length,(firstLine2.match(/\t/g)||[]).length)+1;
+      previewTitle.innerHTML = '<span style="color:#EF4444">⚠ No se encontraron preguntas válidas</span>'+
+        '<div style="font-size:12px;color:#4B5563;margin-top:6px">'+
+        'Líneas detectadas: '+lineCount+' · Columnas en línea 1: '+colCount+'<br>'+
+        'Necesitás al menos 5 columnas: pregunta, correcta, op2, op3, op4<br>'+
+        'Separador detectado: '+(firstLine2.indexOf(';')>-1?'punto y coma':firstLine2.indexOf('\t')>-1?'tabulación':'coma')+
+        '</div>';
       preview.style.display='block';
       return;
     }
 
-    previewTitle.innerHTML = '✓ <span style="color:#10B981">'+CSV_PARSED.length+' preguntas detectadas</span> — Vista previa:';
+    // Detect separator for display
+    var rawText = ev.target.result.replace(/^\uFEFF/,'');
+    var firstLine = rawText.split(/\r?\n/)[0]||'';
+    var sepName = (firstLine.indexOf(';')>-1 && (firstLine.match(/;/g)||[]).length>=4)?'punto y coma (;)':
+                  (firstLine.indexOf('\t')>-1)?'tabulación':
+                  'coma (,)';
+    var totalLines = rawText.split(/\r?\n/).filter(function(l){return l.trim().length>3;}).length;
+    previewTitle.innerHTML = '✓ <span style="color:#10B981">'+CSV_PARSED.length+' preguntas detectadas</span>'+
+      ' <span style="color:#4B5563;font-size:11px">('+totalLines+' líneas · separador: '+sepName+')</span> — Vista previa:';
     preview.style.display = 'block';
     importBtn.style.display = 'inline-flex';
 
@@ -2354,15 +2384,27 @@ function csvPreview(e){
 }
 
 function csvParse(text){
-  // Remove BOM if present
-  text = text.replace(/^\uFEFF/, '');
-  var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+  // Remove BOM if present (Excel adds this)
+  text = text.replace(/^\uFEFF/, '').replace(/\r/g,'');
+  var lines = text.split('\n').filter(function(l){ return l.trim().length > 3; });
   if(lines.length === 0) return [];
 
-  // Check if first line is header
+  // Auto-detect separator from first data line
+  var testLine = lines[0];
+  var sep = ',';
+  var semis = (testLine.match(/;/g)||[]).length;
+  var commas = (testLine.match(/,/g)||[]).length;
+  var tabs = (testLine.match(/\t/g)||[]).length;
+  if(semis >= 4) sep = ';';
+  else if(tabs >= 4) sep = '\t';
+  else sep = ',';
+
+  // Check if first line is header - skip it
   var startLine = 0;
   var firstLower = lines[0].toLowerCase();
-  if(firstLower.startsWith('pregunta') || firstLower.startsWith('question')){
+  if(firstLower.indexOf('pregunta')>=0 || firstLower.indexOf('question')>=0 || 
+     firstLower.indexOf('enunciado')>=0 || firstLower.startsWith('p,') ||
+     firstLower.startsWith('p;')){
     startLine = 1;
   }
 
@@ -2371,16 +2413,26 @@ function csvParse(text){
 
   for(var i=startLine; i<lines.length; i++){
     var cols = csvSplitLine(lines[i]);
-    if(cols.length < 5) continue; // Need at least pregunta + 4 opciones
+    if(cols.length < 5) continue;
 
-    var pregunta = cols[0].trim();
-    var correctaText = cols[1].trim();
-    var op2 = cols[2] ? cols[2].trim() : '';
-    var op3 = cols[3] ? cols[3].trim() : '';
-    var op4 = cols[4] ? cols[4].trim() : '';
-    var materia = cols[5] ? cols[5].trim() : (materias[0]||'General');
-    var trimestre = cols[6] ? cols[6].trim() : 'todos';
-    var tema = cols[7] ? cols[7].trim() : '';
+    var pregunta = cols[0]||'';
+    var correctaText = cols[1]||'';
+    var op2 = cols[2]||'';
+    var op3 = cols[3]||'';
+    var op4 = cols[4]||'';
+    var materia = cols[5]||(materias[0]||'General');
+    var trimestre = cols[6]||'todos';
+    var tema = cols[7]||'';
+
+    // Clean up
+    pregunta = pregunta.replace(/^["']|["']$/g,'').trim();
+    correctaText = correctaText.replace(/^["']|["']$/g,'').trim();
+    op2 = op2.replace(/^["']|["']$/g,'').trim();
+    op3 = op3.replace(/^["']|["']$/g,'').trim();
+    op4 = op4.replace(/^["']|["']$/g,'').trim();
+    materia = materia.replace(/^["']|["']$/g,'').trim();
+    trimestre = trimestre.replace(/^["']|["']$/g,'').trim();
+    tema = tema.replace(/^["']|["']$/g,'').trim();
 
     if(!pregunta||!correctaText||!op2||!op3||!op4) continue;
 
@@ -2407,22 +2459,29 @@ function csvParse(text){
 }
 
 function csvSplitLine(line){
-  // Handle quoted fields (fields with commas inside quotes)
+  // Auto-detect separator: semicolon (Excel español), tab, or comma
+  var sep = ',';
+  if(line.indexOf(';') > -1 && line.indexOf(';') < (line.indexOf(',')===-1?9999:line.indexOf(','))){
+    sep = ';';
+  } else if(line.indexOf('\t') > -1 && line.split('\t').length >= 5){
+    sep = '\t';
+  }
+  // Handle quoted fields
   var result = [];
   var current = '';
   var inQuotes = false;
   for(var i=0; i<line.length; i++){
     var ch = line[i];
-    if(ch==='"'){
+    if(ch==='"' || ch==="'"){
       inQuotes = !inQuotes;
-    } else if(ch===',' && !inQuotes){
-      result.push(current);
+    } else if(ch===sep && !inQuotes){
+      result.push(current.trim());
       current = '';
     } else {
       current += ch;
     }
   }
-  result.push(current);
+  result.push(current.trim());
   return result;
 }
 
