@@ -880,6 +880,7 @@ function teacherBankPanel(){
       return;
     }
     // Filtros
+    // Build materia options dynamically from actual questions
     var materiaOpts = '<option value="todas">Todas mis materias</option>'+
       materias.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('');
     var cuatriOpts = ['todos','1° Trimestre','2° Trimestre','3° Trimestre','Anual'].map(function(c2){
@@ -916,20 +917,26 @@ function teacherBankPanel(){
 }
 
 function teacherBankLoad(){
-  var materias = window._teacherMaterias || [];
   var filtroM = g('tb-filtro-materia') ? g('tb-filtro-materia').value : 'todas';
   var filtroT = g('tb-filtro-tri') ? g('tb-filtro-tri').value : 'todos';
   var search = g('tb-search') ? g('tb-search').value.toLowerCase() : '';
+  var myEmail = STATE.profile.email;
 
   db.ref('banco').once('value').then(function(snap){
     var todas = [];
     snap.forEach(function(child){ todas.push(Object.assign({id:child.key},child.val())); });
 
-    // Solo las de mis materias (comparación flexible)
+    // Mostrar preguntas creadas por este docente O de sus materias asignadas
+    var materias = window._teacherMaterias || [];
     var mias = todas.filter(function(p){
-      if(!p.materia) return false;
-      var pm = p.materia.trim().toLowerCase();
-      return materias.some(function(m){ return m.trim().toLowerCase() === pm; });
+      if(!p) return false;
+      // Si la creó este docente, siempre la ve
+      if(p.creadoPor === myEmail) return true;
+      // Si es de una materia asignada también la ve
+      if(p.materia && materias.some(function(m){
+        return m.trim().toLowerCase() === p.materia.trim().toLowerCase();
+      })) return true;
+      return false;
     });
     var totalMias = mias.length;
 
