@@ -937,7 +937,7 @@ function teacherCorregirEntrega(taskId, studentKey){
       'Total: calculando...</div>'+
       '<div class="modal-footer">'+
         '<button class="btn" onclick="closeModal()">Cancelar</button>'+
-        '<button class="btn btn-primary" onclick="guardarCorreccion(''+taskId+'',''+studentKey+'','+n+','+pts+')">Guardar corrección</button>'+
+        '<button class="btn btn-primary" data-task="'+taskId+'" data-skey="'+studentKey+'" data-n="'+n+'" data-pts="'+pts+'" onclick="guardarCorreccion(this.dataset.task,this.dataset.skey,parseInt(this.dataset.n),parseInt(this.dataset.pts))">Guardar corrección</button>'+
       '</div>'+
     '</div></div></div>';
 
