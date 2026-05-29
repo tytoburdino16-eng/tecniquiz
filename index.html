@@ -2543,7 +2543,11 @@ function teacherOpenImportCSV(){
             '</select>'+
           '</div>'+
         '</div>'+
-        '<div style="font-size:11px;color:#4B5563;margin-bottom:14px">Si seleccionás valores acá, sobreescriben lo que diga el archivo CSV.</div>'+
+        '<div style="font-size:11px;color:#4B5563;margin-bottom:8px">Si seleccionás valores acá, sobreescriben lo que diga el archivo CSV.</div>'+
+        '<div style="margin-bottom:14px">'+
+          '<label class="field-label">Tema / Unidad <span style="color:#374151;font-weight:400">(opcional)</span></label>'+
+          '<input type="text" id="csv-tema" placeholder="Ej: Unidad 2 — Ventilación" style="width:100%">'+
+        '</div>'+
         '<div style="margin-bottom:14px">'+
           '<label class="field-label">Seleccionar archivo CSV</label>'+
           '<input type="file" id="csv-file" accept=".csv,.txt" style="width:100%;padding:10px;background:#080A0F;border:1.5px solid #1E2333;border-radius:8px;color:#F0EDE8;cursor:pointer">'+
@@ -2755,7 +2759,7 @@ function csvDoImport(){
       materia: materiaOverride || pq.materia || (window._teacherMaterias&&window._teacherMaterias[0]) || 'General',
       trimestre: trimestreOverride || pq.trimestre || 'todos',
       anio: anioOverride || pq.anio || 'todos',
-      tema: pq.tema || '',
+      tema: (g('csv-tema')&&g('csv-tema').value.trim()) || pq.tema || '',
       dificultad: pq.dificultad || 'media',
       creadoPor: STATE.profile.email,
       creadoEn: Date.now(),
